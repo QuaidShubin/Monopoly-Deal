@@ -1,0 +1,242 @@
+1. Money Cards (20 Total)
+These cards serve only as cash when placed in your Bank.
+
+$10M Money Card
+• Copies: 1
+• Effect: Highest denomination.
+• Bank Value: 10M
+
+$5M Money Card
+• Copies: 2
+• Effect: High-value cash.
+• Bank Value: 5M
+
+$4M Money Card
+• Copies: 3
+• Effect: Medium–high cash value.
+• Bank Value: 4M
+
+$3M Money Card
+• Copies: 3
+• Effect: Standard cash card.
+• Bank Value: 3M
+
+$2M Money Card
+• Copies: 5
+• Effect: Low–medium cash card.
+• Bank Value: 2M
+
+$1M Money Card
+• Copies: 6
+• Effect: Lowest cash value.
+• Bank Value: 1M
+
+2. Action Cards (34 Total)
+Action cards perform special game functions. They may also be banked for their printed value.
+
+Deal Breaker
+• Copies: 2
+• Effect: Steals a complete property set (including any house/hotel on that set) from an opponent.
+• Bank Value: 5M
+
+Just Say No
+• Copies: 3
+• Effect: Cancels an opponent’s action card (such as Deal Breaker, Force Deal, etc.). It can be countered by another Just Say No.
+• Bank Value: 4M
+• Note: Can be played even after your three plays for a turn.
+
+Sly Deal
+• Copies: 3
+• Effect: Steals one property or wildcard from an opponent. Cannot target a property that is part of a complete set.
+• Bank Value: 3M
+
+Force Deal
+• Copies: 4
+• Effect: Swaps one property card from your collection with one from an opponent’s (the target card must not be in a complete set).
+• Bank Value: 3M
+
+Debt Collector
+• Copies: 3
+• Effect: Forces a chosen opponent to pay you 5M.
+• Bank Value: 3M
+
+It’s My Birthday
+• Copies: 3
+• Effect: Every opponent must give you 2M as a “gift.”
+• Bank Value: 2M
+
+Pass Go
+• Copies: 10
+• Effect: Lets you draw 2 extra cards from the deck immediately.
+• Bank Value: 1M
+
+House
+• Copies: 3
+• Effect: Can be played on a complete property set (except Railroads/Utilities) to increase its rent by 3M.
+• Bank Value: 3M
+• Note: A House must be in place before adding a Hotel.
+
+Hotel
+• Copies: 3
+• Effect: Can be played only on a set that already has a House. It raises the rent by an extra 4M. Together, House and Hotel boost rent by 7M.
+• Bank Value: 4M
+
+Double The Rent
+• Copies: 2
+• Effect: When played with a Rent card, it doubles the rent value you charge.
+• Bank Value: 1M
+• Note: Each Double The Rent counts as a separate play.
+
+3. Rent Cards (13 Total)
+Rent cards allow you to charge opponents rent based on the properties you have laid out. They come in two varieties.
+
+Two‑Color Rent Cards (10 Total)
+These cards show two specific colors. When played, you choose one of the two colors and charge rent for that property set (if you have at least one card in that color).
+
+Purple & Orange Rent Card
+• Copies: 2
+• Effect: Choose either Purple or Orange. Charge all opponents rent for the chosen color set.
+• Bank Value: 1M
+
+Railroad & Utility Rent Card
+• Copies: 2
+• Effect: Choose either Railroads or Utilities. Charge all opponents rent accordingly.
+• Bank Value: 1M
+
+Green & Dark Blue Rent Card
+• Copies: 2
+• Effect: Choose either Green or Dark Blue. Charge all opponents rent for that set.
+• Bank Value: 1M
+
+Brown & Light Blue Rent Card
+• Copies: 2
+• Effect: Choose either Brown or Light Blue. Charge rent from all opponents for that set.
+• Bank Value: 1M
+
+Red & Yellow Rent Card
+• Copies: 2
+• Effect: Choose either Red or Yellow. Charge all opponents rent for the chosen set.
+• Bank Value: 1M
+
+Multi‑Colored (Wild) Rent Cards (3 Total)
+These cards are more flexible in that they let you charge a single opponent for rent on any one property set you own.
+
+Multi‑Colored Rent Card
+• Copies: 3
+• Effect: Select one opponent and one property set (of any color) to charge rent.
+• Bank Value: 3M
+4. Property Cards (28 Total)
+Property cards are laid out in your collection to build full sets. They also have printed monetary values used for payment. The cards are divided among 10 color groups.
+
+Brown Property Set
+Brown Property Cards
+• Copies: 2
+• Printed Value: 1M each
+• Complete Set: 2 cards needed
+• Effect: Can be used as a Brown property and, if used for payment, contribute 1M each.
+Light Blue Property Set
+Light Blue Property Cards
+• Copies: 3
+• Printed Value: 1M each
+• Complete Set: 3 cards needed
+• Effect: Form the Light Blue set.
+Pink (Purple) Property Set
+Pink Property Cards
+• Copies: 3
+• Printed Value: 2M each
+• Complete Set: 3 cards needed
+• Effect: Part of the Pink/Purple group.
+Orange Property Set
+Orange Property Cards
+• Copies: 3
+• Printed Value: 2M each
+• Complete Set: 3 cards needed
+• Effect: Form the Orange set.
+Red Property Set
+Red Property Cards
+• Copies: 3
+• Printed Value: 3M each
+• Complete Set: 3 cards needed
+• Effect: Build the Red set.
+Yellow Property Set
+Yellow Property Cards
+• Copies: 3
+• Printed Value: 3M each
+• Complete Set: 3 cards needed
+• Effect: Form the Yellow set.
+Green Property Set
+Green Property Cards
+• Copies: 3
+• Printed Value: 4M each
+• Complete Set: 3 cards needed
+• Effect: Build the Green set.
+Dark Blue Property Set
+Dark Blue Property Cards
+• Copies: 2
+• Printed Value: 4M each
+• Complete Set: 2 cards needed
+• Effect: Form the Dark Blue set.
+Railroad Property Set
+Railroad Property Cards
+• Copies: 4
+• Printed Value: 2M each
+• Complete Set: 4 cards needed
+• Effect: Collectively form the Railroad set.
+Utility Property Set
+Utility Property Cards
+• Copies: 2
+• Printed Value: 2M each
+• Complete Set: 2 cards needed
+• Effect: Together, they form the Utility set.
+
+Two‐Color Wildcards (8 Total)
+Each can be used as either color shown, and can be banked for the printed value in the corner (unless your house rules say otherwise). Once placed in your bank, it no longer functions as a wildcard property.
+
+Purple & Orange Wildcard
+
+Copies: 2
+Monetary (Bank) Value: 2M
+Effect: May represent Purple or Orange property.
+Notes: If used in a property set, you can switch it (Purple ↔ Orange) on your turn.
+Light Blue & Brown Wildcard
+
+Copies: 1
+Monetary (Bank) Value: 1M
+Effect: May represent Light Blue or Brown property.
+Light Blue & Railroad Wildcard
+
+Copies: 1
+Monetary (Bank) Value: 2M
+Effect: May represent Light Blue or Railroad property.
+Dark Blue & Green Wildcard
+
+Copies: 1
+Monetary (Bank) Value: 4M
+Effect: May represent Dark Blue or Green property.
+Railroad & Green Wildcard
+
+Copies: 1
+Monetary (Bank) Value: 4M
+Effect: May represent Railroad or Green property.
+Red & Yellow Wildcard
+
+Copies: 2
+Monetary (Bank) Value: 3M
+Effect: May represent Red or Yellow property.
+Utility & Railroad Wildcard
+
+Copies: 1
+Monetary (Bank) Value: 2M
+Effect: May represent Utility or Railroad property.
+Ten‐Color (Pure) Wildcards (2 Total)
+These multi‐color wildcards can serve as any property color but have no bank value (0M). They cannot be used to pay debts and cannot be placed in the bank.
+
+Ten‐Color Wildcard
+Copies: 2
+Monetary (Bank) Value: 0M (none)
+Effect: May represent any color property (Brown, Light Blue, Pink, Orange, Red, Yellow, Green, Dark Blue, Railroad, or Utility).
+Notes: It cannot be used alone to form a complete set unless at least one standard property card of that color is also present (depending on house rules).
+Usage Notes
+Switching Colors: On your turn, you may reassign a two‐color or ten‐color wildcard from one color to another (e.g., flipping it from Orange to Purple) if it’s already in your property area.
+Banking: Except for the ten‐color wildcard, these two‐color wildcards do have a monetary value and can be placed in your bank as money. Once banked, they lose their “property” function.
+Paying Debts: You can pay an opponent with a wildcard only if it has a bank value (the ten‐color wildcard cannot be used to pay at all).
