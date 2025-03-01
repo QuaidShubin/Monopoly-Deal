@@ -90,6 +90,13 @@ monopoly-deal/
 - `playCardAsMoney()`: Handles playing a card as money
 - `endTurn()`: Handles turn transitions
 
+#### Payment System
+
+- `requestPayment()`: Initiates payment request from one player to another
+- `showPaymentIndicator()`: Displays the payment UI for the paying player
+- `togglePaymentAsset()`: Handles selection/deselection of assets for payment
+- `processSelectedPayment()`: Transfers selected assets between players
+
 #### UI Management
 
 - `updatePlayerUI()`: Updates all UI elements for a player
@@ -98,7 +105,6 @@ monopoly-deal/
 - `updateMoneyPilesUI()`: Updates money pile display
 - `updateCenterStatus()`: Updates status message
 - `addToHistory()`: Adds entry to game history
-- `toggleOpponentCards()`: Toggles visibility of opponent cards for debugging
 
 ## Data Structures
 
@@ -131,12 +137,15 @@ monopoly-deal/
   hasDrawnCards: false,       // If current player has drawn
   discardMode: false,         // If player is in discard mode
   cardsToDiscard: 0,          // Number of cards to discard
-  paymentRequest: null,       // Payment request object
+  paymentRequest: null,       // Payment request object (to, from, amount)
+  paymentMode: false,         // If in payment mode
+  paymentPending: false,      // If payment is pending
+  selectedPaymentAssets: { money: [], properties: [] },  // Selected payment assets
   players: {
     1: {
       hand: [ /* card objects */ ],          // Cards in hand
-      properties: [ /* card objects */ ],    // Property cards played
-      moneyPiles: {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 10: 0} // Money in bank
+      properties: { color: [ /* cards */ ] },    // Property cards played
+      money: [ /* card objects */ ]          // Money cards played
     },
     2: {
       // Same structure as player 1
@@ -152,8 +161,6 @@ Game Container
 ├── Game Header
 │   ├── Title
 │   ├── Game Info
-│   ├── Debug Controls
-│   │   └── Show Opponent Cards Button
 │   └── Start Button
 ├── Game Layout
 │   ├── Controls Sidebar
@@ -176,7 +183,11 @@ Game Container
 │       └── Game History Log
 └── Modals
     ├── Card Action Modal
-    └── Target Selection Modal
+    └── Payment Modal
+        ├── Payment Header
+        ├── Progress Bar
+        ├── Payment Selection
+        └── Payment Actions
 ```
 
 ## Technical Debt and Future Improvements
@@ -195,3 +206,11 @@ Game Container
 - Creating a proper build process for optimization
 - Adding proper module system (ES modules)
 - Improving accessibility features
+
+## Recent Technical Changes
+
+- Redesigned payment modal with improved UX
+- Added progress bar visualization for payment completion
+- Simplified payment flow with better feedback
+- Improved CSS for payment-related components
+- Enhanced payment asset selection visual feedback

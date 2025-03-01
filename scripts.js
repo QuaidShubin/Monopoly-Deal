@@ -60,6 +60,12 @@ window.MonopolyDeal.setupKeyboardShortcuts = function() {
           // Remove any existing indicators
           document.querySelectorAll('.perspective-indicator').forEach(el => el.remove());
           
+          // Update the current hand area title
+          const currentHandTitle = document.querySelector('.current-hand-area h2');
+          if (currentHandTitle) {
+            currentHandTitle.textContent = `Player 1's Hand`;
+          }
+          
           // Add perspective indicator
           const indicatorP1 = document.createElement('div');
           indicatorP1.className = 'perspective-indicator';
@@ -76,14 +82,6 @@ window.MonopolyDeal.setupKeyboardShortcuts = function() {
           indicatorP1.style.fontSize = '16px';
           indicatorP1.style.zIndex = '1000';
           document.body.appendChild(indicatorP1);
-          
-          // Update player area titles
-          const playerAreaTitle = document.querySelector('.player-area h2');
-          const opponentAreaTitle = document.querySelector('.opponent-area h2');
-          if (playerAreaTitle && opponentAreaTitle) {
-            playerAreaTitle.textContent = "Player 1's Hand";
-            opponentAreaTitle.textContent = "Player 2's Hand";
-          }
           
           // Update button text
           const switchButton = window.MonopolyDeal.elements.switchPerspectiveButton;
@@ -111,6 +109,12 @@ window.MonopolyDeal.setupKeyboardShortcuts = function() {
           // Remove any existing indicators
           document.querySelectorAll('.perspective-indicator').forEach(el => el.remove());
           
+          // Update the current hand area title
+          const currentHandTitle = document.querySelector('.current-hand-area h2');
+          if (currentHandTitle) {
+            currentHandTitle.textContent = `Player 2's Hand`;
+          }
+          
           // Add perspective indicator
           const indicatorP2 = document.createElement('div');
           indicatorP2.className = 'perspective-indicator';
@@ -128,18 +132,10 @@ window.MonopolyDeal.setupKeyboardShortcuts = function() {
           indicatorP2.style.zIndex = '1000';
           document.body.appendChild(indicatorP2);
           
-          // Update player area titles
-          const playerAreaTitle = document.querySelector('.player-area h2');
-          const opponentAreaTitle = document.querySelector('.opponent-area h2');
-          if (playerAreaTitle && opponentAreaTitle) {
-            playerAreaTitle.textContent = "Player 2's Hand";
-            opponentAreaTitle.textContent = "Player 1's Hand";
-          }
-          
           // Update button text
           const switchButton = window.MonopolyDeal.elements.switchPerspectiveButton;
           if (switchButton) {
-            switchButton.textContent = 'Switch to Spectator';
+            switchButton.textContent = 'Switch to Player 1';
           }
           
           window.MonopolyDeal.updateGameStatus(`Switched to Player 2's perspective`);
@@ -158,9 +154,6 @@ window.MonopolyDeal.setupKeyboardShortcuts = function() {
           
           // Update UI elements
           window.MonopolyDeal.updateAllPlayerUIs();
-          
-          // Add spectator indicator
-          window.MonopolyDeal.addSpectatorIndicator();
           
           // Update player area titles
           const playerAreaTitle = document.querySelector('.player-area h2');
@@ -203,89 +196,8 @@ window.MonopolyDeal.updateAllPlayerUIs = function() {
   window.MonopolyDeal.updatePlayerPropertiesUI(1);
   window.MonopolyDeal.updatePlayerPropertiesUI(2);
   
-  // Handle spectator mode
-  if (window.MonopolyDeal.currentPerspective === 3) {
-    window.MonopolyDeal.disableGameControls();
-  } else {
-    window.MonopolyDeal.enableGameControls();
-  }
-};
-
-// Add spectator indicator
-window.MonopolyDeal.addSpectatorIndicator = function() {
-  // Remove existing indicator if any
-  window.MonopolyDeal.removeSpectatorIndicator();
-  
-  // Create new indicator
-  const indicator = document.createElement('div');
-  indicator.id = 'spectator-indicator';
-  indicator.textContent = 'SPECTATOR MODE';
-  indicator.style.position = 'fixed';
-  indicator.style.top = '10px';
-  indicator.style.left = '50%';
-  indicator.style.transform = 'translateX(-50%)';
-  indicator.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-  indicator.style.color = 'white';
-  indicator.style.padding = '5px 15px';
-  indicator.style.borderRadius = '15px';
-  indicator.style.fontWeight = 'bold';
-  indicator.style.fontSize = '16px';
-  indicator.style.zIndex = '1000';
-  
-  document.body.appendChild(indicator);
-};
-
-// Remove spectator indicator
-window.MonopolyDeal.removeSpectatorIndicator = function() {
-  const existingIndicator = document.getElementById('spectator-indicator');
-  if (existingIndicator) {
-    existingIndicator.remove();
-  }
-};
-
-// Disable game controls for spectator mode
-window.MonopolyDeal.disableGameControls = function() {
-  console.log('Disabling game controls for spectator mode');
-  
-  // Disable draw pile
-  const drawPile = document.getElementById('draw-pile');
-  if (drawPile) {
-    drawPile.style.cursor = 'not-allowed';
-    drawPile.style.opacity = '0.7';
-  }
-  
-  // Disable draw cards button
-  if (window.MonopolyDeal.elements.drawButton) {
-    window.MonopolyDeal.elements.drawButton.disabled = true;
-  }
-  
-  // Disable end turn button
-  if (window.MonopolyDeal.elements.endTurnButton) {
-    window.MonopolyDeal.elements.endTurnButton.disabled = true;
-  }
-  
-  // Disable any clickable cards
-  document.querySelectorAll('.card').forEach(card => {
-    card.style.cursor = 'not-allowed';
-  });
-};
-
-// Re-enable game controls
-window.MonopolyDeal.enableGameControls = function() {
-  console.log('Re-enabling game controls');
-  
-  // Re-enable draw pile
-  const drawPile = document.getElementById('draw-pile');
-  if (drawPile) {
-    drawPile.style.cursor = 'pointer';
-    drawPile.style.opacity = '1';
-  }
-  
   // Update button states
   window.MonopolyDeal.updateButtonStates();
-  
-  // Remove spectator indicator
-  window.MonopolyDeal.removeSpectatorIndicator();
 };
 
 // Update button states based on game state
@@ -363,12 +275,9 @@ window.MonopolyDeal.setupEventListeners = function() {
     window.MonopolyDeal.elements.drawPile.addEventListener('click', function() {
       console.log('Draw pile clicked');
       
-      // Only allow draw if current perspective matches current player and not in spectator mode
-      if (window.MonopolyDeal.currentPerspective === window.MonopolyDeal.gameState.currentPlayer &&
-          window.MonopolyDeal.currentPerspective !== 3) {
+      // Only allow draw if current perspective matches current player
+      if (window.MonopolyDeal.currentPerspective === window.MonopolyDeal.gameState.currentPlayer) {
         window.MonopolyDeal.drawCardsForTurn();
-      } else if (window.MonopolyDeal.currentPerspective === 3) {
-        window.MonopolyDeal.updateGameStatus('Spectator mode: Cannot interact with the game');
       } else {
         window.MonopolyDeal.updateGameStatus(`It's Player ${window.MonopolyDeal.gameState.currentPlayer}'s turn to draw cards`);
       }
@@ -400,12 +309,9 @@ window.MonopolyDeal.setupDirectEventListeners = function() {
     window.MonopolyDeal.elements.drawButton.addEventListener('click', function() {
       console.log('Draw cards button clicked');
       
-      // Only allow draw if current perspective matches current player and not in spectator mode
-      if (window.MonopolyDeal.currentPerspective === window.MonopolyDeal.gameState.currentPlayer &&
-          window.MonopolyDeal.currentPerspective !== 3) {
+      // Only allow draw if current perspective matches current player
+      if (window.MonopolyDeal.currentPerspective === window.MonopolyDeal.gameState.currentPlayer) {
         window.MonopolyDeal.drawCardsForTurn();
-      } else if (window.MonopolyDeal.currentPerspective === 3) {
-        window.MonopolyDeal.updateGameStatus('Spectator mode: Cannot interact with the game');
       } else {
         window.MonopolyDeal.updateGameStatus(`It's Player ${window.MonopolyDeal.gameState.currentPlayer}'s turn to draw cards`);
       }
@@ -420,12 +326,9 @@ window.MonopolyDeal.setupDirectEventListeners = function() {
     window.MonopolyDeal.elements.endTurnButton.addEventListener('click', function() {
       console.log('End turn button clicked');
       
-      // Only allow end turn if current perspective matches current player and not in spectator mode
-      if (window.MonopolyDeal.currentPerspective === window.MonopolyDeal.gameState.currentPlayer &&
-          window.MonopolyDeal.currentPerspective !== 3) {
+      // Only allow end turn if current perspective matches current player
+      if (window.MonopolyDeal.currentPerspective === window.MonopolyDeal.gameState.currentPlayer) {
         window.MonopolyDeal.endTurn();
-      } else if (window.MonopolyDeal.currentPerspective === 3) {
-        window.MonopolyDeal.updateGameStatus('Spectator mode: Cannot interact with the game');
       } else {
         window.MonopolyDeal.updateGameStatus(`It's Player ${window.MonopolyDeal.gameState.currentPlayer}'s turn to end their turn`);
       }
@@ -447,17 +350,25 @@ window.MonopolyDeal.setupDirectEventListeners = function() {
   }
 };
 
-// Switch between player perspectives (1 -> 2 -> 3 -> 1)
+// Switch between player perspectives (1 -> 2 -> 1)
 window.MonopolyDeal.switchPerspective = function() {
   console.log('Switching perspective...');
   
   // If payment is pending, only allow switching to the paying player's perspective
   if (window.MonopolyDeal.gameState.paymentPending) {
     const payingPlayer = window.MonopolyDeal.gameState.paymentRequest?.fromPlayer;
+    console.log(`Payment pending. Paying player: ${payingPlayer}, Current perspective: ${window.MonopolyDeal.currentPerspective}`);
     
     // If not already on paying player's perspective, switch to it
     if (window.MonopolyDeal.currentPerspective !== payingPlayer) {
+      console.log(`Switching to paying player's perspective: ${payingPlayer}`);
       window.MonopolyDeal.currentPerspective = payingPlayer;
+      
+      // Force re-showing the payment modal
+      window.MonopolyDeal.removePaymentIndicator();
+      window.MonopolyDeal.showPaymentIndicator();
+      
+      // Update UIs and game status
       window.MonopolyDeal.updateAllPlayerUIs();
       window.MonopolyDeal.updateGameStatus(`Switched to Player ${payingPlayer}'s perspective to make payment`);
       window.MonopolyDeal.addToHistory(`Switched to Player ${payingPlayer}'s perspective to make payment`);
@@ -472,11 +383,14 @@ window.MonopolyDeal.switchPerspective = function() {
   // Remove any previous perspective indicators
   document.querySelectorAll('.perspective-indicator').forEach(el => el.remove());
   
-  // Cycle through perspectives: 1 -> 2 -> 3 -> 1
+  // Remove active class from all player areas
+  document.querySelectorAll('.player-area, .opponent-area').forEach(el => {
+    el.classList.remove('active');
+  });
+  
+  // Cycle between perspectives: 1 -> 2 -> 1
   if (window.MonopolyDeal.currentPerspective === 1) {
     window.MonopolyDeal.currentPerspective = 2;
-  } else if (window.MonopolyDeal.currentPerspective === 2) {
-    window.MonopolyDeal.currentPerspective = 3; // Spectator mode
   } else {
     window.MonopolyDeal.currentPerspective = 1;
   }
@@ -484,69 +398,66 @@ window.MonopolyDeal.switchPerspective = function() {
   // Update all player UIs
   window.MonopolyDeal.updateAllPlayerUIs();
   
-  // Add perspective indicator
-  const indicator = document.createElement('div');
-  indicator.className = 'perspective-indicator';
-  
-  if (window.MonopolyDeal.currentPerspective === 3) {
-    // Spectator mode indicator
-    indicator.textContent = 'SPECTATOR MODE';
-    indicator.style.backgroundColor = 'rgba(128, 0, 128, 0.7)'; // Purple for spectator
-    window.MonopolyDeal.updateGameStatus('Switched to Spectator mode - no interactions allowed');
-  } else {
-    // Player perspective indicator
-    indicator.textContent = `PLAYER ${window.MonopolyDeal.currentPerspective} VIEW`;
-    indicator.style.backgroundColor = window.MonopolyDeal.currentPerspective === 1 ? 
-      'rgba(0, 128, 0, 0.7)' : 'rgba(0, 0, 128, 0.7)'; // Green for P1, Blue for P2
-    window.MonopolyDeal.updateGameStatus(`Viewing from Player ${window.MonopolyDeal.currentPerspective}'s perspective`);
+  // Update the current hand area title to show which player's perspective
+  const currentHandTitle = document.querySelector('.current-hand-area h2');
+  if (currentHandTitle) {
+    currentHandTitle.textContent = `Player ${window.MonopolyDeal.currentPerspective}'s Hand (Your View)`;
   }
   
-  // Style the indicator
-  indicator.style.position = 'fixed';
-  indicator.style.top = '10px';
-  indicator.style.left = '50%';
-  indicator.style.transform = 'translateX(-50%)';
-  indicator.style.color = 'white';
-  indicator.style.padding = '5px 15px';
-  indicator.style.borderRadius = '15px';
-  indicator.style.fontWeight = 'bold';
-  indicator.style.fontSize = '16px';
-  indicator.style.zIndex = '1000';
+  // Add highlighting to the current perspective's area
+  const playerAreas = [
+    { area: document.querySelector('.opponent-area'), player: 1 },
+    { area: document.querySelector('.player-area'), player: 2 }
+  ];
   
-  document.body.appendChild(indicator);
-  
-  // Also update the player area titles to make it clear
-  const playerAreaTitle = document.querySelector('.player-area h2');
-  const opponentAreaTitle = document.querySelector('.opponent-area h2');
-  
-  if (playerAreaTitle && opponentAreaTitle) {
-    if (window.MonopolyDeal.currentPerspective === 1) {
-      playerAreaTitle.textContent = "Player 1's Hand";
-      opponentAreaTitle.textContent = "Player 2's Hand";
-    } else if (window.MonopolyDeal.currentPerspective === 2) {
-      playerAreaTitle.textContent = "Player 2's Hand";
-      opponentAreaTitle.textContent = "Player 1's Hand";
-    } else {
-      playerAreaTitle.textContent = "Player 1's Hand";
-      opponentAreaTitle.textContent = "Player 2's Hand";
+  playerAreas.forEach(({ area, player }) => {
+    if (area) {
+      if (player === window.MonopolyDeal.currentPerspective) {
+        area.classList.add('active');
+      }
     }
-  }
+  });
   
-  // Update button text if it exists
+  // Add a temporary fixed notification at the top of the screen
+  const colors = {
+    1: { bg: '#f44336', text: 'white' },  // Red for Player 1
+    2: { bg: '#2196f3', text: 'white' }   // Blue for Player 2
+  };
+  
+  const fixedIndicator = document.createElement('div');
+  fixedIndicator.className = 'perspective-indicator';
+  fixedIndicator.textContent = `NOW VIEWING PLAYER ${window.MonopolyDeal.currentPerspective}`;
+  fixedIndicator.style.position = 'fixed';
+  fixedIndicator.style.top = '10px';
+  fixedIndicator.style.left = '50%';
+  fixedIndicator.style.transform = 'translateX(-50%)';
+  fixedIndicator.style.backgroundColor = colors[window.MonopolyDeal.currentPerspective].bg;
+  fixedIndicator.style.color = colors[window.MonopolyDeal.currentPerspective].text;
+  fixedIndicator.style.padding = '8px 20px';
+  fixedIndicator.style.borderRadius = '20px';
+  fixedIndicator.style.fontWeight = 'bold';
+  fixedIndicator.style.fontSize = '16px';
+  fixedIndicator.style.zIndex = '1000';
+  fixedIndicator.style.boxShadow = '0 3px 10px rgba(0,0,0,0.2)';
+  document.body.appendChild(fixedIndicator);
+  
+  // Auto-hide fixed indicator after 3 seconds
+  setTimeout(() => {
+    fixedIndicator.style.transition = 'opacity 0.5s ease';
+    fixedIndicator.style.opacity = '0';
+    
+    // Remove after fade out
+    setTimeout(() => fixedIndicator.remove(), 500);
+  }, 3000);
+  
+  // Update button text
   const switchButton = window.MonopolyDeal.elements.switchPerspectiveButton;
   if (switchButton) {
-    if (window.MonopolyDeal.currentPerspective === 1) {
-      switchButton.textContent = 'Switch to Player 2';
-    } else if (window.MonopolyDeal.currentPerspective === 2) {
-      switchButton.textContent = 'Switch to Spectator';
-    } else {
-      switchButton.textContent = 'Switch to Player 1';
-    }
+    switchButton.textContent = `Switch to Player ${window.MonopolyDeal.currentPerspective === 1 ? '2' : '1'}'s View`;
   }
   
-  window.MonopolyDeal.addToHistory(`Switched to ${window.MonopolyDeal.currentPerspective === 3 ? 'Spectator mode' : 'Player ' + window.MonopolyDeal.currentPerspective + '\'s perspective'}`);
-  
-  console.log(`Perspective switched to ${window.MonopolyDeal.currentPerspective === 3 ? 'Spectator mode' : 'Player ' + window.MonopolyDeal.currentPerspective}`);
+  // Update game history with perspective change
+  window.MonopolyDeal.addToHistory(`Switched to Player ${window.MonopolyDeal.currentPerspective}'s perspective`);
 };
 
 // Export functions
@@ -556,10 +467,6 @@ window.MonopolyDeal.setupDirectEventListeners = window.MonopolyDeal.setupDirectE
 window.MonopolyDeal.switchPerspective = window.MonopolyDeal.switchPerspective;
 window.MonopolyDeal.setupKeyboardShortcuts = window.MonopolyDeal.setupKeyboardShortcuts;
 window.MonopolyDeal.updateAllPlayerUIs = window.MonopolyDeal.updateAllPlayerUIs;
-window.MonopolyDeal.addSpectatorIndicator = window.MonopolyDeal.addSpectatorIndicator;
-window.MonopolyDeal.removeSpectatorIndicator = window.MonopolyDeal.removeSpectatorIndicator;
-window.MonopolyDeal.disableGameControls = window.MonopolyDeal.disableGameControls;
-window.MonopolyDeal.enableGameControls = window.MonopolyDeal.enableGameControls;
 window.MonopolyDeal.updateButtonStates = window.MonopolyDeal.updateButtonStates;
 
 console.log('Scripts.js loaded successfully!');

@@ -36,6 +36,7 @@ window.MonopolyDeal.setupElements = function() {
     window.MonopolyDeal.elements = {
       playerHand: document.getElementById('player-hand'),
       opponentHand: document.getElementById('opponent-hand'),
+      currentPlayerHand: document.getElementById('current-player-hand'),
       playerMoney: document.getElementById('player-money'),
       opponentMoney: document.getElementById('opponent-money'),
       playerProperties: document.getElementById('player-properties'),
@@ -661,22 +662,24 @@ window.MonopolyDeal.requestPayment = function(fromPlayerNumber, toPlayerNumber, 
   // Enable payment mode
   window.MonopolyDeal.gameState.paymentMode = true;
   
-  // Update UI for all players
-  window.MonopolyDeal.updateAllPlayerUIs();
+  // Ensure we're in the paying player's perspective
+  if (window.MonopolyDeal.currentPerspective !== fromPlayerNumber) {
+    window.MonopolyDeal.currentPerspective = fromPlayerNumber;
+    window.MonopolyDeal.updateAllPlayerUIs();
+    window.MonopolyDeal.addToHistory(`Switched to Player ${fromPlayerNumber}'s perspective to make payment`);
+  }
   
-  // Show payment indicator
-  window.MonopolyDeal.showPaymentIndicator();
+  // Show payment modal
+  window.MonopolyDeal.showPaymentModal();
   
   // Update game status
   window.MonopolyDeal.updateGameStatus(`Player ${fromPlayerNumber} must pay $${amount}M to Player ${toPlayerNumber} for ${reason}`);
   window.MonopolyDeal.addToHistory(`Player ${toPlayerNumber} requested $${amount}M payment from Player ${fromPlayerNumber}`);
 };
 
-// Show payment indicator
-window.MonopolyDeal.showPaymentIndicator = function() {
-  console.log('Showing payment indicator...');
-  // Remove existing indicator if any
-  window.MonopolyDeal.removePaymentIndicator();
+// Show the payment modal with all selectable assets
+window.MonopolyDeal.showPaymentModal = function() {
+  console.log('Showing payment modal...');
   
   const paymentRequest = window.MonopolyDeal.gameState.paymentRequest;
   
@@ -685,206 +688,174 @@ window.MonopolyDeal.showPaymentIndicator = function() {
     return;
   }
   
-  // Check if we should use modal or indicator based on whether we're in the payment player's perspective
-  if (window.MonopolyDeal.currentPerspective === paymentRequest.fromPlayer) {
-    // Show the built-in payment modal
-    const paymentModal = document.getElementById('payment-modal');
-    if (paymentModal) {
-      console.log('Showing payment modal');
-      
-      // Set up the payment modal
-      document.getElementById('payment-amount').textContent = paymentRequest.amount;
-      document.getElementById('payment-selected-amount').textContent = '0';
-      document.getElementById('payment-required-amount').textContent = paymentRequest.amount;
-      document.getElementById('payment-reason').textContent = paymentRequest.reason || '';
-      
-      // Make sure progress bar is empty initially
-      const progressBar = document.getElementById('payment-progress-bar');
-      if (!progressBar) {
-        // Create a progress bar if one doesn't exist
-        const progressContainer = document.createElement('div');
-        progressContainer.className = 'payment-progress';
-        
-        const newProgressBar = document.createElement('div');
-        newProgressBar.id = 'payment-progress-bar';
-        newProgressBar.className = 'payment-progress-bar';
-        newProgressBar.style.width = '0%';
-        
-        progressContainer.appendChild(newProgressBar);
-        
-        // Add it to the modal body
-        const modalBody = paymentModal.querySelector('.modal-body');
-        if (modalBody) {
-          const paymentTotal = modalBody.querySelector('.payment-total');
-          if (paymentTotal) {
-            modalBody.insertBefore(progressContainer, paymentTotal.nextSibling);
-            console.log('Created and added progress bar to payment modal');
-          }
-        }
-      } else {
-        progressBar.style.width = '0%';
-        progressBar.classList.remove('sufficient');
-      }
-      
-      // Empty the containers
-      const moneyContainer = document.getElementById('payment-money-container');
-      const propertiesContainer = document.getElementById('payment-properties-container');
-      
-      if (moneyContainer) moneyContainer.innerHTML = '';
-      if (propertiesContainer) propertiesContainer.innerHTML = '';
-      
-      // Get player data
-      const fromPlayer = window.MonopolyDeal.gameState.players[paymentRequest.fromPlayer];
-      
-      // *** COMPLETELY REWIRE THE CONFIRM BUTTON ***
-      const confirmButton = document.getElementById('payment-confirm-btn');
-      if (confirmButton) {
-        // First, reset button state
-        confirmButton.disabled = true;
-        confirmButton.style.backgroundColor = '#aaa';
-        confirmButton.style.cursor = 'not-allowed';
-        confirmButton.style.transform = 'scale(1)';
-        confirmButton.style.boxShadow = 'none';
-        confirmButton.style.opacity = '0.8';
-        confirmButton.style.fontWeight = 'normal';
-        confirmButton.textContent = 'Confirm Payment';
-        
-        // Remove all existing event listeners by cloning and replacing
-        const newConfirmButton = confirmButton.cloneNode(true);
-        confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
-        
-        // Add click handler to the new button
-        newConfirmButton.addEventListener('click', function(event) {
-          event.preventDefault();
-          console.log('Payment confirm button clicked, button disabled state:', this.disabled);
-          
-          // Process payment regardless of disabled state as a safety measure
-          console.log('Processing payment...');
-          window.MonopolyDeal.processSelectedPayment();
-          
-          // Explicitly close the modal
-          paymentModal.style.display = 'none';
-          document.body.classList.remove('modal-open');
-        });
-      }
-      
-      // *** REWIRE THE CANCEL BUTTON ***
-      const cancelButton = document.getElementById('payment-cancel-btn');
-      if (cancelButton) {
-        // Remove existing listeners
-        const newCancelButton = cancelButton.cloneNode(true);
-        cancelButton.parentNode.replaceChild(newCancelButton, cancelButton);
-        
-        // Add click listener
-        newCancelButton.addEventListener('click', function(event) {
-          event.preventDefault();
-          console.log('Payment cancelled');
-          paymentModal.style.display = 'none';
-          document.body.classList.remove('modal-open');
-        });
-      }
-      
-      // Add money cards
-      fromPlayer.money.forEach((card, index) => {
-        const moneyCard = document.createElement('div');
-        moneyCard.className = `card money-card money-${card.value}-card payment-selectable`;
-        
-        const overlayElement = document.createElement('div');
-        overlayElement.className = 'payment-overlay';
-        overlayElement.textContent = `$${card.value}M`;
-        moneyCard.appendChild(overlayElement);
-        
-        moneyCard.innerHTML += `<div class="card-value">$${card.value}M</div>`;
-        
-        moneyCard.addEventListener('click', function() {
-          // Toggle selection class
-          this.classList.toggle('payment-selected');
-          // Update asset selection
-          window.MonopolyDeal.togglePaymentAsset('money', index);
-        });
-        
-        if (moneyContainer) moneyContainer.appendChild(moneyCard);
-      });
-      
-      // Add property cards
-      Object.entries(fromPlayer.properties).forEach(([color, cards]) => {
-        cards.forEach((card, index) => {
-          const propertyCard = document.createElement('div');
-          propertyCard.className = `card property-card ${color}-property payment-selectable`;
-          
-          const overlayElement = document.createElement('div');
-          overlayElement.className = 'payment-overlay';
-          overlayElement.textContent = `$${card.value}M`;
-          propertyCard.appendChild(overlayElement);
-          
-          propertyCard.innerHTML += `
-            <div class="property-color ${color}"></div>
-            <div class="property-name">${card.name}</div>
-            <div class="property-value">$${card.value}M</div>
-          `;
-          
-          propertyCard.addEventListener('click', function() {
-            // Toggle selection class
-            this.classList.toggle('payment-selected');
-            // Update asset selection
-            window.MonopolyDeal.togglePaymentAsset('property', index, color);
-          });
-          
-          if (propertiesContainer) propertiesContainer.appendChild(propertyCard);
-        });
-      });
-      
-      // Show the modal
-      paymentModal.style.display = 'flex';
-      document.body.classList.add('modal-open');
-    } else {
-      console.error('Payment modal element not found!');
-    }
-  } else {
-    // Create payment info UI
-    const paymentInfo = document.createElement('div');
-    paymentInfo.id = 'payment-info';
-    paymentInfo.className = 'payment-info';
-    
-    // Add payment message with clearer formatting
-    const paymentMessage = document.createElement('div');
-    paymentMessage.className = 'payment-message';
-    paymentMessage.innerHTML = `
-      <div class="payment-reason">${paymentRequest.reason || 'Payment Request'}</div>
-      <div class="payment-details">
-        <strong>Player ${paymentRequest.fromPlayer}</strong> must pay 
-        <strong>$${paymentRequest.amount}M</strong> to 
-        <strong>Player ${paymentRequest.toPlayer}</strong>
-      </div>
-    `;
-    
-    paymentInfo.appendChild(paymentMessage);
-    
-    // Add to the document body
-    document.body.appendChild(paymentInfo);
+  const paymentModal = document.getElementById('payment-modal');
+  if (!paymentModal) {
+    console.error('Payment modal element not found!');
+    return;
   }
   
-  // Update button states
-  window.MonopolyDeal.updateButtonStates();
+  // Set up the payment modal content
+  document.getElementById('payment-amount').textContent = paymentRequest.amount;
+  document.getElementById('payment-selected-amount').textContent = '0';
+  document.getElementById('payment-required-amount').textContent = paymentRequest.amount;
+  document.getElementById('payment-reason').textContent = paymentRequest.reason || '';
+  
+  // Reset progress bar
+  const progressBar = document.getElementById('payment-progress-bar');
+  if (progressBar) {
+    progressBar.style.width = '0%';
+    progressBar.classList.remove('sufficient');
+  }
+  
+  // Set up modal close button
+  const closeButton = paymentModal.querySelector('.close');
+  if (closeButton) {
+    // Remove existing listeners by replacing the element
+    const newCloseButton = closeButton.cloneNode(true);
+    closeButton.parentNode.replaceChild(newCloseButton, closeButton);
+    
+    // Add new listener
+    newCloseButton.addEventListener('click', function() {
+      paymentModal.style.display = 'none';
+      // Note: We don't allow canceling the payment through this, it just hides the modal
+      // The payment is still required - will show again if the player tries to do other actions
+    });
+  }
+  
+  // Set up payment confirm button
+  const confirmButton = document.getElementById('payment-confirm-btn');
+  if (confirmButton) {
+    // Reset button state
+    confirmButton.disabled = true;
+    
+    // Replace to remove existing listeners
+    const newConfirmButton = confirmButton.cloneNode(true);
+    confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+    
+    // Add new listener
+    newConfirmButton.addEventListener('click', function() {
+      window.MonopolyDeal.processSelectedPayment();
+    });
+  }
+  
+  // Set up cancel button
+  const cancelButton = document.getElementById('payment-cancel-btn');
+  if (cancelButton) {
+    // Replace to remove existing listeners
+    const newCancelButton = cancelButton.cloneNode(true);
+    cancelButton.parentNode.replaceChild(newCancelButton, cancelButton);
+    
+    // Add new listener
+    newCancelButton.addEventListener('click', function() {
+      paymentModal.style.display = 'none';
+      // Just hide the modal, payment is still required
+    });
+  }
+  
+  // Clear and populate payment containers
+  window.MonopolyDeal.populatePaymentSelectionContainers();
+  
+  // Display the modal
+  paymentModal.style.display = 'flex';
+  
+  // Ensure button state is correct (disabled until sufficient payment selected)
+  window.MonopolyDeal.updatePaymentButtonState();
 };
 
-// Remove payment indicator
-window.MonopolyDeal.removePaymentIndicator = function() {
-  const existingIndicator = document.getElementById('payment-info');
-  if (existingIndicator) {
-    existingIndicator.remove();
+// Populate the payment containers with selectable assets
+window.MonopolyDeal.populatePaymentSelectionContainers = function() {
+  console.log('Populating payment selection containers...');
+  
+  const paymentRequest = window.MonopolyDeal.gameState.paymentRequest;
+  if (!paymentRequest) return;
+  
+  const fromPlayer = window.MonopolyDeal.gameState.players[paymentRequest.fromPlayer];
+  
+  // Get containers
+  const moneyContainer = document.getElementById('payment-money-container');
+  const propertiesContainer = document.getElementById('payment-properties-container');
+  
+  // Clear containers
+  if (moneyContainer) moneyContainer.innerHTML = '';
+  if (propertiesContainer) propertiesContainer.innerHTML = '';
+  
+  // Add empty message if no assets
+  if (fromPlayer.money.length === 0) {
+    moneyContainer.innerHTML = '<div class="empty-message">No money cards available.</div>';
+  }
+  
+  // Add money cards
+  fromPlayer.money.forEach((card, index) => {
+    const cardElement = document.createElement('div');
+    cardElement.className = `card money-card money-${card.value}-card payment-selectable`;
+    cardElement.innerHTML = `<div class="card-value">$${card.value}M</div>`;
+    cardElement.dataset.index = index;
+    
+    // Add selection overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'payment-overlay';
+    overlay.textContent = 'Select';
+    cardElement.appendChild(overlay);
+    
+    // Add click handler
+    cardElement.addEventListener('click', function() {
+      window.MonopolyDeal.togglePaymentAsset('money', index);
+    });
+    
+    moneyContainer.appendChild(cardElement);
+  });
+  
+  // Check if player has any properties
+  let hasProperties = false;
+  for (const color in fromPlayer.properties) {
+    if (fromPlayer.properties[color] && fromPlayer.properties[color].length > 0) {
+      hasProperties = true;
+      break;
+    }
+  }
+  
+  if (!hasProperties) {
+    propertiesContainer.innerHTML = '<div class="empty-message">No property cards available.</div>';
+  }
+  
+  // Add property cards
+  for (const color in fromPlayer.properties) {
+    const properties = fromPlayer.properties[color];
+    
+    for (let i = 0; i < properties.length; i++) {
+      const property = properties[i];
+      
+      // Create property card
+      const cardElement = document.createElement('div');
+      cardElement.className = `card property-card ${color}-property payment-selectable`;
+      cardElement.innerHTML = `
+        <div class="property-name">${property.name}</div>
+        <div class="property-value">$${property.value}M</div>
+      `;
+      cardElement.dataset.color = color;
+      cardElement.dataset.index = i;
+      
+      // Add selection overlay
+      const overlay = document.createElement('div');
+      overlay.className = 'payment-overlay';
+      overlay.textContent = 'Select';
+      cardElement.appendChild(overlay);
+      
+      // Add click handler
+      cardElement.addEventListener('click', function() {
+        window.MonopolyDeal.togglePaymentAsset('property', i, color);
+      });
+      
+      propertiesContainer.appendChild(cardElement);
+    }
   }
 };
 
 // Process the selected payment assets
 window.MonopolyDeal.processSelectedPayment = function() {
-  console.log('Processing selected payment...');
+  console.log('Processing selected payment assets...');
   
-  // Get payment state
   const paymentRequest = window.MonopolyDeal.gameState.paymentRequest;
-  const selectedAssets = window.MonopolyDeal.gameState.selectedPaymentAssets;
-  
-  // Validate payment request and selected assets
   if (!paymentRequest) {
     console.error('No payment request found!');
     return;
@@ -894,320 +865,318 @@ window.MonopolyDeal.processSelectedPayment = function() {
   const toPlayer = window.MonopolyDeal.gameState.players[paymentRequest.toPlayer];
   
   if (!fromPlayer || !toPlayer) {
-    console.error('Player not found!');
+    console.error('Invalid player in payment request!');
     return;
   }
   
   // Calculate total payment amount
-  let paymentTotal = 0;
+  const selectedTotal = window.MonopolyDeal.calculateSelectedPaymentTotal();
+  console.log(`Selected payment total: $${selectedTotal}M of $${paymentRequest.amount}M required`);
   
-  // Add up money values
-  selectedAssets.money.forEach(idx => {
-    if (fromPlayer.money[idx]) {
-      const moneyCard = fromPlayer.money[idx];
-      paymentTotal += parseInt(moneyCard.value);
-    }
-  });
-  
-  // Add up property values
-  selectedAssets.properties.forEach(prop => {
-    if (fromPlayer.properties[prop.color] && fromPlayer.properties[prop.color][prop.index]) {
-      const propertyCard = fromPlayer.properties[prop.color][prop.index];
-      paymentTotal += parseInt(propertyCard.value);
-    }
-  });
-  
-  const isFullPayment = paymentTotal >= paymentRequest.amount;
-  
-  // Sort indices in descending order to remove from the end first
-  selectedAssets.money.sort((a, b) => b - a);
-  
-  // Transfer money
-  selectedAssets.money.forEach(index => {
-    if (index >= 0 && index < fromPlayer.money.length) {
-      const card = fromPlayer.money.splice(index, 1)[0];
-      toPlayer.money.push(card);
-    }
-  });
-  
-  // Transfer properties (process in descending order to avoid index issues)
-  selectedAssets.properties.sort((a, b) => {
-    if (a.color !== b.color) return 0;
-    return b.index - a.index;
-  });
-  
-  selectedAssets.properties.forEach(prop => {
-    if (fromPlayer.properties[prop.color] && prop.index >= 0 && prop.index < fromPlayer.properties[prop.color].length) {
-      const card = fromPlayer.properties[prop.color].splice(prop.index, 1)[0];
-      
-      // Initialize property color group if it doesn't exist for recipient
-      if (!toPlayer.properties[prop.color]) {
-        toPlayer.properties[prop.color] = [];
-      }
-      
-      toPlayer.properties[prop.color].push(card);
-    }
-  });
-  
-  // Update UI
-  window.MonopolyDeal.updateAllPlayerUIs();
-  
-  // Update game status with appropriate message
-  if (isFullPayment) {
-    window.MonopolyDeal.updateGameStatus(`Player ${paymentRequest.fromPlayer} paid Player ${paymentRequest.toPlayer} $${paymentRequest.amount}M for ${paymentRequest.reason}`);
-    window.MonopolyDeal.addToHistory(`Player ${paymentRequest.fromPlayer} paid Player ${paymentRequest.toPlayer} $${paymentRequest.amount}M`);
+  // Check if payment is sufficient
+  if (selectedTotal < paymentRequest.amount) {
+    // Payment is insufficient, but we'll still allow it with a warning
+    window.MonopolyDeal.showTemporaryMessage(
+      `Warning: Payment is $${paymentRequest.amount - selectedTotal}M short!`,
+      3000
+    );
+    window.MonopolyDeal.addToHistory(`Player ${paymentRequest.fromPlayer} made a partial payment of $${selectedTotal}M to Player ${paymentRequest.toPlayer}`);
   } else {
-    window.MonopolyDeal.updateGameStatus(`Player ${paymentRequest.fromPlayer} made a partial payment of $${paymentTotal}M to Player ${paymentRequest.toPlayer} for ${paymentRequest.reason}`);
-    window.MonopolyDeal.addToHistory(`Player ${paymentRequest.fromPlayer} made a partial payment of $${paymentTotal}M to Player ${paymentRequest.toPlayer}`);
+    window.MonopolyDeal.addToHistory(`Player ${paymentRequest.fromPlayer} paid $${selectedTotal}M to Player ${paymentRequest.toPlayer}`);
   }
   
-  // IMPORTANT: Close the payment modal - multiple ways to ensure it works
-  // 1. Direct modal close
+  // Sort indices in descending order so we remove from back to front
+  const moneyIndices = [...window.MonopolyDeal.gameState.selectedPaymentAssets.money].sort((a, b) => b - a);
+  
+  // Transfer money cards
+  moneyIndices.forEach(index => {
+    if (fromPlayer.money[index]) {
+      // Get the card
+      const card = fromPlayer.money[index];
+      
+      // Add to recipient
+      toPlayer.money.push(card);
+      
+      // Remove from sender (using splice to remove at specific index)
+      fromPlayer.money.splice(index, 1);
+      
+      console.log(`Transferred money card worth $${card.value}M from Player ${paymentRequest.fromPlayer} to Player ${paymentRequest.toPlayer}`);
+    }
+  });
+  
+  // Sort property indices by color and then by index (descending)
+  const propertyTransfers = [...window.MonopolyDeal.gameState.selectedPaymentAssets.properties];
+  
+  // Group properties by color
+  const transfersByColor = {};
+  propertyTransfers.forEach(transfer => {
+    if (!transfersByColor[transfer.color]) {
+      transfersByColor[transfer.color] = [];
+    }
+    transfersByColor[transfer.color].push(transfer.index);
+  });
+  
+  // Transfer properties (for each color, sort indices in descending order)
+  for (const color in transfersByColor) {
+    const indices = transfersByColor[color].sort((a, b) => b - a);
+    
+    indices.forEach(index => {
+      if (fromPlayer.properties[color] && fromPlayer.properties[color][index]) {
+        // Get the property card
+        const propertyCard = fromPlayer.properties[color][index];
+        
+        // Ensure recipient has the color array
+        if (!toPlayer.properties[color]) {
+          toPlayer.properties[color] = [];
+        }
+        
+        // Add to recipient
+        toPlayer.properties[color].push(propertyCard);
+        
+        // Remove from sender
+        fromPlayer.properties[color].splice(index, 1);
+        
+        console.log(`Transferred ${color} property "${propertyCard.name}" worth $${propertyCard.value}M from Player ${paymentRequest.fromPlayer} to Player ${paymentRequest.toPlayer}`);
+      }
+    });
+  }
+  
+  // Close payment modal
   const paymentModal = document.getElementById('payment-modal');
   if (paymentModal) {
-    console.log('Closing payment modal after processing payment');
     paymentModal.style.display = 'none';
   }
   
-  // 2. Remove modal-open class from body
-  document.body.classList.remove('modal-open');
-  
-  // 3. Remove any payment info elements
-  const paymentInfo = document.getElementById('payment-info');
-  if (paymentInfo) {
-    paymentInfo.remove();
-  }
-  
   // Reset payment state
-  window.MonopolyDeal.gameState.paymentMode = false;
   window.MonopolyDeal.gameState.paymentPending = false;
+  window.MonopolyDeal.gameState.paymentMode = false;
   window.MonopolyDeal.gameState.paymentRequest = null;
-  window.MonopolyDeal.gameState.selectedPaymentAssets = { money: [], properties: [] };
+  window.MonopolyDeal.gameState.selectedPaymentAssets = {
+    money: [],
+    properties: []
+  };
   
-  // Remove payment indicator
-  window.MonopolyDeal.removePaymentIndicator();
+  // Update UI for both players
+  window.MonopolyDeal.updatePlayerMoneyUI(paymentRequest.fromPlayer);
+  window.MonopolyDeal.updatePlayerPropertiesUI(paymentRequest.fromPlayer);
+  window.MonopolyDeal.updatePlayerMoneyUI(paymentRequest.toPlayer);
+  window.MonopolyDeal.updatePlayerPropertiesUI(paymentRequest.toPlayer);
   
-  // Update button states
+  // Update game status
+  window.MonopolyDeal.updateGameStatus(`Payment of $${selectedTotal}M completed from Player ${paymentRequest.fromPlayer} to Player ${paymentRequest.toPlayer}`);
+  
+  // Re-enable all buttons
   window.MonopolyDeal.updateButtonStates();
   
-  // Check for win condition
-  window.MonopolyDeal.checkWinCondition(paymentRequest.toPlayer);
+  // Show success notification
+  window.MonopolyDeal.showTemporaryMessage('Payment successful!', 2000);
 };
 
 // Toggle selection of an asset for payment
 window.MonopolyDeal.togglePaymentAsset = function(type, index, color = null) {
-  console.log(`Toggling payment asset: ${type} ${color ? color + ' ' : ''}index ${index}`);
+  console.log(`Toggling payment asset: ${type} at index ${index}${color ? ' color ' + color : ''}`);
   
-  const selectedAssets = window.MonopolyDeal.gameState.selectedPaymentAssets;
+  // Calculate current selected total
+  let currentTotal = window.MonopolyDeal.calculateSelectedPaymentTotal();
+  console.log(`Current payment total: $${currentTotal}M`);
+  
   const paymentRequest = window.MonopolyDeal.gameState.paymentRequest;
-  const fromPlayer = window.MonopolyDeal.gameState.players[paymentRequest.fromPlayer];
-  
-  // Calculate current selected total before making changes
-  let currentSelectedTotal = 0;
-  
-  // Add up current money values
-  selectedAssets.money.forEach(idx => {
-    const moneyCard = fromPlayer.money[idx];
-    currentSelectedTotal += parseInt(moneyCard.value);
-  });
-  
-  // Add up current property values
-  selectedAssets.properties.forEach(prop => {
-    const propertyCard = fromPlayer.properties[prop.color][prop.index];
-    currentSelectedTotal += parseInt(propertyCard.value);
-  });
-  
-  // Check if we're deselecting an asset
-  let isDeselecting = false;
-  
-  if (type === 'money') {
-    isDeselecting = selectedAssets.money.includes(index);
-  } else if (type === 'property' && color) {
-    isDeselecting = selectedAssets.properties.some(p => p.color === color && p.index === index);
+  if (!paymentRequest) {
+    console.error('No payment request found!');
+    return;
   }
   
-  // If we're trying to select (not deselect) and we already have enough, prevent it
-  const amountNeeded = paymentRequest.amount;
-  if (!isDeselecting && currentSelectedTotal >= amountNeeded) {
-    console.log('Payment already sufficient, cannot select more assets unless something is deselected first');
-    window.MonopolyDeal.updateGameStatus('Payment amount satisfied. Deselect something first to make changes.');
-    return false;
-  }
+  // Get card value being toggled
+  let cardValue = 0;
+  let cardElement = null;
   
-  // Now proceed with the toggle operation
   if (type === 'money') {
-    const existingIndex = selectedAssets.money.indexOf(index);
-    if (existingIndex === -1) {
-      // Select it
-      selectedAssets.money.push(index);
-      console.log(`Selected money card at index ${index}`);
+    const player = window.MonopolyDeal.gameState.players[paymentRequest.fromPlayer];
+    const card = player.money[index];
+    
+    if (card) {
+      cardValue = card.value;
+      // Find the card element in the payment modal
+      cardElement = document.querySelector(`.payment-selectable[data-index="${index}"]`);
     } else {
-      // Deselect it
-      selectedAssets.money.splice(existingIndex, 1);
-      console.log(`Deselected money card at index ${index}`);
+      console.error(`Money card at index ${index} not found!`);
+      return;
+    }
+  } else if (type === 'property') {
+    const player = window.MonopolyDeal.gameState.players[paymentRequest.fromPlayer];
+    if (player.properties[color] && player.properties[color][index]) {
+      cardValue = player.properties[color][index].value;
+      // Find the property card element
+      cardElement = document.querySelector(`.property-card[data-color="${color}"][data-index="${index}"]`);
+    } else {
+      console.error(`Property card at color ${color}, index ${index} not found!`);
+      return;
+    }
+  }
+  
+  // Check if this card is already selected
+  let selectedAssets;
+  let isAlreadySelected = false;
+  
+  if (type === 'money') {
+    selectedAssets = window.MonopolyDeal.gameState.selectedPaymentAssets.money;
+    isAlreadySelected = selectedAssets.includes(index);
+  } else if (type === 'property') {
+    selectedAssets = window.MonopolyDeal.gameState.selectedPaymentAssets.properties;
+    isAlreadySelected = selectedAssets.some(p => p.color === color && p.index === index);
+  }
+  
+  // Deselecting: Always allow this
+  if (isAlreadySelected) {
+    console.log(`Deselecting ${type} asset`);
+    
+    if (type === 'money') {
+      // Remove from selected assets
+      window.MonopolyDeal.gameState.selectedPaymentAssets.money = selectedAssets.filter(i => i !== index);
+    } else if (type === 'property') {
+      // Remove from selected properties
+      window.MonopolyDeal.gameState.selectedPaymentAssets.properties = selectedAssets.filter(
+        p => !(p.color === color && p.index === index)
+      );
+    }
+    
+    // Update UI
+    if (cardElement) {
+      cardElement.classList.remove('payment-selected');
     }
   } 
-  // Handle property assets
-  else if (type === 'property' && color) {
-    const existingIndex = selectedAssets.properties.findIndex(
-      p => p.color === color && p.index === index
-    );
+  // Selecting: Check if we're already at or over payment amount
+  else {
+    console.log(`Selecting ${type} asset worth $${cardValue}M`);
     
-    if (existingIndex === -1) {
-      // Select it
-      selectedAssets.properties.push({ color, index });
-      console.log(`Selected ${color} property at index ${index}`);
-    } else {
-      // Deselect it
-      selectedAssets.properties.splice(existingIndex, 1);
-      console.log(`Deselected ${color} property at index ${index}`);
+    // Check if adding this card would exceed payment, but only warn if it's significantly over
+    if (currentTotal >= paymentRequest.amount && cardValue > 1) {
+      console.log(`Warning: Current total $${currentTotal}M already meets or exceeds payment amount $${paymentRequest.amount}M`);
+      
+      // Show warning if this would be significantly over the required amount
+      if (currentTotal + cardValue > paymentRequest.amount * 1.5) {
+        const overAmount = currentTotal + cardValue - paymentRequest.amount;
+        window.MonopolyDeal.showTemporaryMessage(
+          `You would be overpaying by $${overAmount}M. Are you sure?`,
+          3000
+        );
+      }
+    }
+    
+    // Add to selected assets
+    if (type === 'money') {
+      window.MonopolyDeal.gameState.selectedPaymentAssets.money.push(index);
+    } else if (type === 'property') {
+      window.MonopolyDeal.gameState.selectedPaymentAssets.properties.push({
+        color: color,
+        index: index
+      });
+    }
+    
+    // Update UI
+    if (cardElement) {
+      cardElement.classList.add('payment-selected');
     }
   }
   
-  // Calculate selected total
-  let selectedTotal = 0;
+  // Update payment UI
+  window.MonopolyDeal.updatePaymentUI();
+};
+
+// Update the payment UI elements
+window.MonopolyDeal.updatePaymentUI = function() {
+  const paymentRequest = window.MonopolyDeal.gameState.paymentRequest;
+  if (!paymentRequest) return;
   
-  // Add up money values
-  selectedAssets.money.forEach(idx => {
-    const moneyCard = fromPlayer.money[idx];
-    selectedTotal += parseInt(moneyCard.value);
-    console.log(`Added money card value: $${moneyCard.value}M`);
-  });
+  // Calculate new total
+  const selectedTotal = window.MonopolyDeal.calculateSelectedPaymentTotal();
+  console.log(`New payment total: $${selectedTotal}M of $${paymentRequest.amount}M required`);
   
-  // Add up property values
-  selectedAssets.properties.forEach(prop => {
-    const propertyCard = fromPlayer.properties[prop.color][prop.index];
-    selectedTotal += parseInt(propertyCard.value);
-    console.log(`Added property card value: $${propertyCard.value}M`);
-  });
-  
-  const stillNeeded = Math.max(0, amountNeeded - selectedTotal);
-  const isPaymentSufficient = selectedTotal >= amountNeeded;
-  // Check if any assets are selected at all
-  const hasSelectedAssets = selectedAssets.money.length > 0 || selectedAssets.properties.length > 0;
-  
-  console.log(`Selected total: $${selectedTotal}M, Required: $${amountNeeded}M, Still needed: $${stillNeeded}M, Sufficient: ${isPaymentSufficient}, Has selected assets: ${hasSelectedAssets}`);
-  
-  // Log all available modal elements for debugging
-  console.log('Modal elements:', {
-    'payment-selected-amount': document.getElementById('payment-selected-amount'),
-    'payment-progress-bar': document.getElementById('payment-progress-bar'),
-    'payment-confirm-btn': document.getElementById('payment-confirm-btn'),
-    'payment-modal': document.getElementById('payment-modal')
-  });
-  
-  // Update payment selected amount - check both in the regular UI and in the modal
-  let selectedAmountElement = document.getElementById('payment-selected-amount');
+  // Update selected amount display
+  const selectedAmountElement = document.getElementById('payment-selected-amount');
   if (selectedAmountElement) {
-    // Format properly with currency symbol and 'M' suffix (but HTML already has $ and M, so just use the number)
     selectedAmountElement.textContent = selectedTotal;
-    console.log(`Updated selected amount display to: ${selectedTotal}`);
-  } else {
-    console.error('Selected amount element not found!');
   }
   
-  // Update required amount display
-  const requiredAmountElement = document.getElementById('payment-required-amount');
-  if (requiredAmountElement) {
-    requiredAmountElement.textContent = amountNeeded;
-    console.log(`Updated required amount display to: ${amountNeeded}`);
-  }
-  
-  // Update progress bar - look in both places
-  let progressBar = document.getElementById('payment-progress-bar');
-  if (!progressBar) {
-    // Try finding it in the dynamically created payment info
-    const paymentInfo = document.getElementById('payment-info');
-    if (paymentInfo) {
-      progressBar = paymentInfo.querySelector('.payment-progress-bar');
-      console.log('Found progress bar in payment-info:', progressBar);
-    }
-  }
-  
+  // Update progress bar
+  const progressBar = document.getElementById('payment-progress-bar');
   if (progressBar) {
-    // Calculate percentage and update width
-    const percentage = Math.min(100, (selectedTotal / amountNeeded) * 100);
+    // Calculate percentage
+    const percentage = Math.min(100, (selectedTotal / paymentRequest.amount) * 100);
     progressBar.style.width = `${percentage}%`;
-    console.log(`Updated progress bar width to: ${percentage}%`);
     
-    // Update class based on payment sufficiency
-    if (isPaymentSufficient) {
-      console.log('Payment is sufficient, adding sufficient class to progress bar');
+    // Add or remove sufficient class based on total
+    if (selectedTotal >= paymentRequest.amount) {
       progressBar.classList.add('sufficient');
     } else {
-      console.log('Payment is insufficient, removing sufficient class from progress bar');
       progressBar.classList.remove('sufficient');
     }
-  } else {
-    console.error('Progress bar element not found in any location!');
   }
   
-  // If confirmButton is found, update its state
-  let confirmButton = document.getElementById('payment-confirm-btn');
+  // Update confirm button state
+  window.MonopolyDeal.updatePaymentButtonState();
+};
+
+// Update the payment confirm button state based on selected total
+window.MonopolyDeal.updatePaymentButtonState = function() {
+  const paymentRequest = window.MonopolyDeal.gameState.paymentRequest;
+  if (!paymentRequest) return;
+  
+  const selectedTotal = window.MonopolyDeal.calculateSelectedPaymentTotal();
+  const confirmButton = document.getElementById('payment-confirm-btn');
+  
   if (confirmButton) {
-    // IMPORTANT: Get a fresh reference to the button that's actually in the DOM
-    // This ensures we're targeting the right element after any cloning/replacement
-    const liveConfirmButton = document.getElementById('payment-confirm-btn');
-    
-    if (liveConfirmButton) {
-      // Enable the button as long as at least one asset is selected
-      liveConfirmButton.disabled = !hasSelectedAssets;
-      console.log(`Set confirm button disabled state to: ${!hasSelectedAssets}, hasSelectedAssets: ${hasSelectedAssets}`);
-      
-      // Force style changes for better visibility
-      if (hasSelectedAssets) {
-        // Use blue color when the player has selected assets
-        liveConfirmButton.style.backgroundColor = '#1e88e5';
-        liveConfirmButton.style.cursor = 'pointer';
-        liveConfirmButton.style.transform = 'scale(1.05)';
-        liveConfirmButton.style.boxShadow = '0 0 12px rgba(30, 136, 229, 0.7)';
-        liveConfirmButton.style.opacity = '1';
-        liveConfirmButton.style.fontWeight = 'bold';
-        
-        // Force enable the button to ensure it's clickable
-        liveConfirmButton.disabled = false;
-        liveConfirmButton.removeAttribute('disabled');
-        
-        // Add a pulsing animation if payment is not sufficient
-        if (!isPaymentSufficient) {
-          liveConfirmButton.textContent = `Pay Partial Amount ($${selectedTotal}M)`;
-        } else {
-          liveConfirmButton.textContent = 'Confirm Payment';
-        }
-        
-        // Ensure button is responding to clicks by checking and re-attaching the click handler if needed
-        if (!liveConfirmButton._hasPaymentClickHandler) {
-          liveConfirmButton.addEventListener('click', function(event) {
-            event.preventDefault();
-            console.log('Payment confirm button clicked from dynamic handler');
-            window.MonopolyDeal.processSelectedPayment();
-          });
-          liveConfirmButton._hasPaymentClickHandler = true;
-        }
-      } else {
-        liveConfirmButton.style.backgroundColor = '#aaa';
-        liveConfirmButton.style.cursor = 'not-allowed';
-        liveConfirmButton.style.transform = 'scale(1)';
-        liveConfirmButton.style.boxShadow = 'none';
-        liveConfirmButton.style.opacity = '0.8';
-        liveConfirmButton.style.fontWeight = 'normal';
-        liveConfirmButton.textContent = 'Confirm Payment';
-      }
-    } else {
-      console.error('Live confirm button not found in DOM!');
+    // Enable button if payment is sufficient
+    const isSufficient = selectedTotal >= paymentRequest.amount;
+    confirmButton.disabled = !isSufficient;
+  }
+};
+
+// Calculate the total value of selected payment assets
+window.MonopolyDeal.calculateSelectedPaymentTotal = function() {
+  const paymentRequest = window.MonopolyDeal.gameState.paymentRequest;
+  if (!paymentRequest) return 0;
+  
+  const fromPlayer = window.MonopolyDeal.gameState.players[paymentRequest.fromPlayer];
+  let total = 0;
+  
+  // Add up money card values
+  window.MonopolyDeal.gameState.selectedPaymentAssets.money.forEach(index => {
+    if (fromPlayer.money[index]) {
+      total += fromPlayer.money[index].value;
     }
-  } else {
-    console.error('Confirm button element not found in any location!');
+  });
+  
+  // Add up property card values
+  window.MonopolyDeal.gameState.selectedPaymentAssets.properties.forEach(property => {
+    const { color, index } = property;
+    if (fromPlayer.properties[color] && fromPlayer.properties[color][index]) {
+      total += fromPlayer.properties[color][index].value;
+    }
+  });
+  
+  return total;
+};
+
+// Show a temporary message on the screen
+window.MonopolyDeal.showTemporaryMessage = function(message, duration = 2000) {
+  // Create or use existing message element
+  let messageElement = document.getElementById('temporary-message');
+  
+  if (!messageElement) {
+    messageElement = document.createElement('div');
+    messageElement.id = 'temporary-message';
+    document.body.appendChild(messageElement);
   }
   
-  // Update UI status indicators in money and property sections
-  window.MonopolyDeal.updatePaymentStatusIndicators(paymentRequest.fromPlayer, stillNeeded, hasSelectedAssets, isPaymentSufficient);
+  // Set message and show
+  messageElement.textContent = message;
+  messageElement.className = 'temporary-message visible';
   
-  // Update UI for the player
-  window.MonopolyDeal.updatePlayerMoneyUI(paymentRequest.fromPlayer);
-  window.MonopolyDeal.updatePlayerPropertiesUI(paymentRequest.fromPlayer);
-  
-  return true;
+  // Hide after duration
+  setTimeout(() => {
+    messageElement.className = 'temporary-message';
+  }, duration);
 };
 
 // Update payment status indicators in the money and property sections
@@ -1455,77 +1424,27 @@ window.MonopolyDeal.countCompleteSets = function(playerNumber) {
 window.MonopolyDeal.updatePlayerHandUI = function(playerNumber) {
   console.log(`Updating hand UI for player ${playerNumber}...`);
   
-  // Get the correct elements based on perspective and player number
-  let handElement;
+  // Always use current-player-hand for the active perspective's cards
+  const currentPerspectiveHandElement = window.MonopolyDeal.elements.currentPlayerHand;
   
-  // When the current perspective matches the player number, show in "player-hand" (bottom)
-  // Otherwise show in "opponent-hand" (top)
-  if (playerNumber === window.MonopolyDeal.currentPerspective) {
-    handElement = document.getElementById('player-hand');
-    console.log(`Using player-hand element for player ${playerNumber} (current perspective)`);
-  } else {
-    handElement = document.getElementById('opponent-hand');
-    console.log(`Using opponent-hand element for player ${playerNumber} (not current perspective)`);
-  }
+  // Update the hidden hand container for data consistency
+  // This ensures the data is kept up to date even if not shown
+  const hiddenHandElement = playerNumber === 1 ? 
+    window.MonopolyDeal.elements.opponentHand : 
+    window.MonopolyDeal.elements.playerHand;
   
-  if (!handElement) {
-    console.error(`Hand element for player ${playerNumber} not found`);
+  if (!hiddenHandElement) {
+    console.error(`Hidden hand element for player ${playerNumber} not found`);
     return false;
   }
   
   const hand = window.MonopolyDeal.gameState.players[playerNumber].hand;
-  handElement.innerHTML = '';
+  hiddenHandElement.innerHTML = '';
   
-  // In spectator mode, don't show any cards at all - just show card counts
-  if (window.MonopolyDeal.currentPerspective === 3) {
-    console.log(`Spectator mode: Showing only card count for player ${playerNumber}`);
-    
-    const spectatorMessage = document.createElement('div');
-    spectatorMessage.className = 'spectator-message';
-    spectatorMessage.textContent = `Player ${playerNumber} has ${hand.length} cards`;
-    spectatorMessage.style.textAlign = 'center';
-    spectatorMessage.style.padding = '20px';
-    spectatorMessage.style.fontSize = '16px';
-    spectatorMessage.style.color = '#555';
-    spectatorMessage.style.fontStyle = 'italic';
-    
-    handElement.appendChild(spectatorMessage);
-    return true;
-  }
-  
-  // Show cards based on perspective
-  if (playerNumber !== window.MonopolyDeal.currentPerspective) {
-    console.log(`Showing ${hand.length} face-down cards for player ${playerNumber}`);
-    
-    // Add counter for number of cards
-    if (hand.length > 0) {
-      const counterElement = document.createElement('div');
-      counterElement.className = 'card-counter';
-      counterElement.textContent = `${hand.length} cards`;
-      counterElement.style.position = 'absolute';
-      counterElement.style.top = '5px';
-      counterElement.style.right = '5px';
-      counterElement.style.background = 'rgba(0,0,0,0.7)';
-      counterElement.style.color = 'white';
-      counterElement.style.padding = '2px 5px';
-      counterElement.style.borderRadius = '3px';
-      counterElement.style.fontSize = '14px';
-      
-      handElement.appendChild(counterElement);
-    }
-    
-    // Show face-down cards
-    hand.forEach(() => {
-      const cardElement = document.createElement('div');
-      cardElement.className = 'card card-back';
-      cardElement.textContent = 'Monopoly Deal';
-      cardElement.style.cursor = 'not-allowed';
-      
-      handElement.appendChild(cardElement);
-    });
-  } else {
-    // Show actual cards for the current perspective's player
-    console.log(`Showing ${hand.length} actual cards for player ${playerNumber}`);
+  // Only show cards in currentPlayerHand if this player's perspective is active
+  if (playerNumber === window.MonopolyDeal.currentPerspective) {
+    currentPerspectiveHandElement.innerHTML = '';
+    console.log(`Showing ${hand.length} actual cards for player ${playerNumber} (current perspective)`);
     
     hand.forEach(card => {
       const cardElement = document.createElement('div');
@@ -1585,7 +1504,7 @@ window.MonopolyDeal.updatePlayerHandUI = function(playerNumber) {
         });
       }
       
-      handElement.appendChild(cardElement);
+      currentPerspectiveHandElement.appendChild(cardElement);
     });
     
     // Add discard mode indicator if needed
@@ -1594,8 +1513,20 @@ window.MonopolyDeal.updatePlayerHandUI = function(playerNumber) {
       const discardInfo = document.createElement('div');
       discardInfo.className = 'discard-info';
       discardInfo.textContent = `Discard ${window.MonopolyDeal.gameState.cardsToDiscard} more cards`;
-      handElement.appendChild(discardInfo);
+      currentPerspectiveHandElement.appendChild(discardInfo);
     }
+    
+    // Update the current hand area title
+    const currentHandTitle = document.querySelector('.current-hand-area h2');
+    if (currentHandTitle) {
+      currentHandTitle.textContent = `Player ${playerNumber}'s Hand (Your View)`;
+    }
+  } else {
+    // If this is not the current perspective, update the card counter in hidden element
+    const counterElement = document.createElement('div');
+    counterElement.className = 'card-counter';
+    counterElement.textContent = `${hand.length} cards`;
+    hiddenHandElement.appendChild(counterElement);
   }
   
   return true;
@@ -1604,17 +1535,19 @@ window.MonopolyDeal.updatePlayerHandUI = function(playerNumber) {
 window.MonopolyDeal.updatePlayerMoneyUI = function(playerNumber) {
   console.log(`Updating money UI for player ${playerNumber}...`);
   
-  // Get the correct elements based on perspective and player number
-  let moneyElement;
+  // Fixed positions: Player 1 always top, Player 2 always bottom
+  let moneyElement, totalElement;
   
-  // When the current perspective matches the player number, show in "player-money" (bottom)
-  // Otherwise show in "opponent-money" (top)
-  if (playerNumber === window.MonopolyDeal.currentPerspective) {
-    moneyElement = document.getElementById('player-money');
-    console.log(`Using player-money element for player ${playerNumber} (current perspective)`);
-  } else {
+  if (playerNumber === 1) {
+    // Player 1 is always in opponent area (top)
     moneyElement = document.getElementById('opponent-money');
-    console.log(`Using opponent-money element for player ${playerNumber} (not current perspective)`);
+    totalElement = document.getElementById('opponent-money-total');
+    console.log(`Using opponent-money element for Player 1 (top)`);
+  } else {
+    // Player 2 is always in player area (bottom)
+    moneyElement = document.getElementById('player-money');
+    totalElement = document.getElementById('player-money-total');
+    console.log(`Using player-money element for Player 2 (bottom)`);
   }
   
   if (!moneyElement) {
@@ -1625,22 +1558,19 @@ window.MonopolyDeal.updatePlayerMoneyUI = function(playerNumber) {
   const money = window.MonopolyDeal.gameState.players[playerNumber].money;
   moneyElement.innerHTML = '';
   
-  // In spectator mode, only show count of money cards
-  if (window.MonopolyDeal.currentPerspective === 3) {
-    const spectatorMessage = document.createElement('div');
-    spectatorMessage.className = 'spectator-message';
-    spectatorMessage.textContent = `Player ${playerNumber} has ${money.length} money cards`;
-    spectatorMessage.style.textAlign = 'center';
-    spectatorMessage.style.padding = '10px';
-    spectatorMessage.style.fontSize = '14px';
-    spectatorMessage.style.color = '#555';
-    spectatorMessage.style.fontStyle = 'italic';
-    
-    moneyElement.appendChild(spectatorMessage);
-    return true;
+  // Add perspective indicator if this is the current perspective
+  if (playerNumber === window.MonopolyDeal.currentPerspective) {
+    const perspectiveIndicator = document.createElement('div');
+    perspectiveIndicator.className = 'perspective-indicator active';
+    perspectiveIndicator.textContent = `YOUR VIEW`;
+    moneyElement.appendChild(perspectiveIndicator);
   }
   
-  let totalValue = 0;
+  // Add player banner to clearly show which player this is
+  const playerBanner = document.createElement('div');
+  playerBanner.className = `player-banner player${playerNumber}`;
+  playerBanner.textContent = `PLAYER ${playerNumber}`;
+  moneyElement.appendChild(playerBanner);
   
   // Check if in payment mode and this is the paying player
   const isPaymentMode = window.MonopolyDeal.gameState.paymentMode;
@@ -1649,44 +1579,104 @@ window.MonopolyDeal.updatePlayerMoneyUI = function(playerNumber) {
                          window.MonopolyDeal.gameState.paymentRequest.fromPlayer === playerNumber;
   const selectedAssets = window.MonopolyDeal.gameState.selectedPaymentAssets;
   
-  money.forEach((card, index) => {
-    totalValue += parseInt(card.value);
-    
-    const cardElement = document.createElement('div');
-    cardElement.className = 'card money-card played';
-    
-    // Add payment-selectable class if in payment mode and this is the paying player
-    if (isPayingPlayer && window.MonopolyDeal.currentPerspective === playerNumber) {
-      cardElement.className += ' payment-selectable';
-      
-      // Check if this card is already selected for payment
-      if (selectedAssets.money.includes(index)) {
-        cardElement.className += ' payment-selected';
-      }
-      
-      // Add payment overlay
-      const overlayElement = document.createElement('div');
-      overlayElement.className = 'payment-overlay';
-      overlayElement.textContent = `$${card.value}M`;
-      cardElement.appendChild(overlayElement);
-      
-      // Add click event to select for payment
-      cardElement.addEventListener('click', function() {
-        window.MonopolyDeal.togglePaymentAsset('money', index);
-      });
-    }
-    
-    cardElement.style.backgroundColor = window.MonopolyDeal.getMoneyColor(card.value);
-    cardElement.innerHTML += `<div class="card-value">$${card.value}M</div>`;
-    
-    moneyElement.appendChild(cardElement);
+  // Group money cards by denomination
+  const denominations = [1, 2, 3, 4, 5, 10];
+  const denominationCounts = {};
+  let totalValue = 0;
+  
+  // Initialize counts to 0
+  denominations.forEach(value => {
+    denominationCounts[value] = {
+      count: 0,
+      indices: []
+    };
   });
   
-  // Add total value display
-  const totalElement = document.createElement('div');
-  totalElement.className = 'money-total';
-  totalElement.textContent = `Total: $${totalValue}M`;
-  moneyElement.appendChild(totalElement);
+  // Count card denominations and keep track of their indices
+  money.forEach((card, index) => {
+    const value = parseInt(card.value);
+    totalValue += value;
+    
+    if (denominationCounts[value]) {
+      denominationCounts[value].count++;
+      denominationCounts[value].indices.push(index);
+    }
+  });
+  
+  // Create denomination container
+  const denominationContainer = document.createElement('div');
+  denominationContainer.className = 'money-denomination-container';
+  
+  // Create boxes for each denomination
+  denominations.forEach(value => {
+    const box = document.createElement('div');
+    box.className = 'money-denomination-box';
+    box.style.backgroundColor = window.MonopolyDeal.getMoneyColor(value);
+    
+    // Add count
+    const countElement = document.createElement('div');
+    countElement.className = 'money-denomination-count';
+    countElement.textContent = denominationCounts[value].count;
+    box.appendChild(countElement);
+    
+    // Add value
+    const valueElement = document.createElement('div');
+    valueElement.className = 'money-denomination-value';
+    valueElement.textContent = `$${value}M`;
+    box.appendChild(valueElement);
+    
+    // If in payment mode and this is the paying player and current perspective
+    if (isPayingPlayer && window.MonopolyDeal.currentPerspective === playerNumber) {
+      // Add payment-selectable class
+      box.className += ' payment-selectable';
+      
+      // Add attributes for selection
+      box.setAttribute('data-denomination', value);
+      
+      // Check if any cards of this denomination are selected
+      const isAnySelected = denominationCounts[value].indices.some(idx => 
+        selectedAssets.money.includes(idx)
+      );
+      
+      if (isAnySelected) {
+        box.classList.add('payment-selected');
+      }
+      
+      // Add overlay for selection
+      const overlayElement = document.createElement('div');
+      overlayElement.className = 'payment-overlay';
+      overlayElement.textContent = `$${value}M`;
+      box.appendChild(overlayElement);
+      
+      // Add click event for payment selection
+      if (denominationCounts[value].count > 0) {
+        box.addEventListener('click', function() {
+          const denomination = parseInt(this.getAttribute('data-denomination'));
+          const indices = denominationCounts[denomination].indices;
+          
+          if (indices.length > 0) {
+            // Toggle selection for the first available card of this denomination
+            // If already selected, deselect it. If not selected, select it.
+            const indexToToggle = indices.find(idx => !selectedAssets.money.includes(idx)) ?? indices[0];
+            window.MonopolyDeal.togglePaymentAsset('money', indexToToggle);
+          }
+        });
+      } else {
+        box.classList.add('empty');
+        box.style.opacity = '0.5';
+        box.style.cursor = 'default';
+      }
+    }
+    
+    denominationContainer.appendChild(box);
+  });
+  
+  moneyElement.appendChild(denominationContainer);
+  
+  // Update total value display in the compact format
+  if (totalElement) {
+    totalElement.textContent = totalValue;
+  }
   
   return true;
 };
@@ -1694,17 +1684,17 @@ window.MonopolyDeal.updatePlayerMoneyUI = function(playerNumber) {
 window.MonopolyDeal.updatePlayerPropertiesUI = function(playerNumber) {
   console.log(`Updating properties UI for player ${playerNumber}...`);
   
-  // Get the correct elements based on perspective and player number
+  // Fixed positions: Player 1 always top, Player 2 always bottom
   let propertiesElement;
   
-  // When the current perspective matches the player number, show in "player-properties" (bottom)
-  // Otherwise show in "opponent-properties" (top)
-  if (playerNumber === window.MonopolyDeal.currentPerspective) {
-    propertiesElement = document.getElementById('player-properties');
-    console.log(`Using player-properties element for player ${playerNumber} (current perspective)`);
-  } else {
+  if (playerNumber === 1) {
+    // Player 1 is always in opponent area (top)
     propertiesElement = document.getElementById('opponent-properties');
-    console.log(`Using opponent-properties element for player ${playerNumber} (not current perspective)`);
+    console.log(`Using opponent-properties element for Player 1 (top)`);
+  } else {
+    // Player 2 is always in player area (bottom)
+    propertiesElement = document.getElementById('player-properties');
+    console.log(`Using player-properties element for Player 2 (bottom)`);
   }
   
   if (!propertiesElement) {
@@ -1715,22 +1705,12 @@ window.MonopolyDeal.updatePlayerPropertiesUI = function(playerNumber) {
   const properties = window.MonopolyDeal.gameState.players[playerNumber].properties;
   propertiesElement.innerHTML = '';
   
-  // In spectator mode, only show summary of properties
-  if (window.MonopolyDeal.currentPerspective === 3) {
-    const colorGroups = Object.keys(properties);
-    const totalProperties = colorGroups.reduce((total, color) => total + properties[color].length, 0);
-    
-    const spectatorMessage = document.createElement('div');
-    spectatorMessage.className = 'spectator-message';
-    spectatorMessage.textContent = `Player ${playerNumber} has ${totalProperties} properties in ${colorGroups.length} color groups`;
-    spectatorMessage.style.textAlign = 'center';
-    spectatorMessage.style.padding = '10px';
-    spectatorMessage.style.fontSize = '14px';
-    spectatorMessage.style.color = '#555';
-    spectatorMessage.style.fontStyle = 'italic';
-    
-    propertiesElement.appendChild(spectatorMessage);
-    return true;
+  // Add perspective indicator if this is the current perspective
+  if (playerNumber === window.MonopolyDeal.currentPerspective) {
+    const perspectiveIndicator = document.createElement('div');
+    perspectiveIndicator.className = 'perspective-indicator active';
+    perspectiveIndicator.textContent = `YOUR VIEW`;
+    propertiesElement.appendChild(perspectiveIndicator);
   }
   
   // Check if in payment mode and this is the paying player
@@ -1744,20 +1724,28 @@ window.MonopolyDeal.updatePlayerPropertiesUI = function(playerNumber) {
   // For each property color group, create a container
   Object.entries(properties).forEach(([color, cards]) => {
     const colorGroupElement = document.createElement('div');
+    // Add both the property-group class and the color-specific class
     colorGroupElement.className = `property-group ${color}-group`;
     
     // Add header for the color group
     const headerElement = document.createElement('div');
     headerElement.className = 'property-group-header';
-    headerElement.textContent = `${color.charAt(0).toUpperCase() + color.slice(1)} Properties`;
+    headerElement.textContent = `${color.charAt(0).toUpperCase() + color.slice(1)}`;
     colorGroupElement.appendChild(headerElement);
     
-    // Add each property card
+    // Create two row containers for the cards
+    const topRowElement = document.createElement('div');
+    topRowElement.className = 'property-row top-row';
+    
+    const bottomRowElement = document.createElement('div');
+    bottomRowElement.className = 'property-row bottom-row';
+    
+    // Add cards to rows (divide cards between the two rows)
     cards.forEach((card, index) => {
       const cardElement = document.createElement('div');
       cardElement.className = `card property-card ${color}-property played`;
       
-      // Add payment-selectable class if in payment mode and this is the paying player
+      // Add payment-selectable class if in payment mode and this is the paying player and current perspective
       if (isPayingPlayer && window.MonopolyDeal.currentPerspective === playerNumber) {
         cardElement.className += ' payment-selectable';
         
@@ -1786,10 +1774,23 @@ window.MonopolyDeal.updatePlayerPropertiesUI = function(playerNumber) {
         <div class="property-name">${card.name}</div>
         <div class="property-value">$${card.value}M</div>`;
       
-      colorGroupElement.appendChild(cardElement);
+      // Determine which row to add the card to
+      // First 3 cards go in the top row, the rest go in the bottom row
+      if (index < 3) {
+        topRowElement.appendChild(cardElement);
+      } else {
+        bottomRowElement.appendChild(cardElement);
+      }
     });
     
-    propertiesElement.appendChild(colorGroupElement);
+    // Add rows to the property group
+    colorGroupElement.appendChild(topRowElement);
+    colorGroupElement.appendChild(bottomRowElement);
+    
+    // Only append the property group if it has cards
+    if (cards.length > 0) {
+      propertiesElement.appendChild(colorGroupElement);
+    }
   });
   
   return true;
@@ -1884,11 +1885,9 @@ window.MonopolyDeal.canPlayerInteract = function(playerNumber) {
   // Can interact if:
   // 1. It's the player's turn
   // 2. Current perspective is the player's perspective
-  // 3. Not in spectator mode
   return (
     window.MonopolyDeal.gameState.currentPlayer === playerNumber &&
-    window.MonopolyDeal.currentPerspective === playerNumber &&
-    window.MonopolyDeal.currentPerspective !== 3
+    window.MonopolyDeal.currentPerspective === playerNumber
   );
 };
 
