@@ -29,68 +29,15 @@ window.MonopolyDeal.setupKeyboardShortcuts = function() {
       return;
     }
     
-    // If payment is pending, only allow switching to the paying player's perspective
-    if (window.MonopolyDeal.gameState.paymentPending) {
-      const payingPlayer = window.MonopolyDeal.gameState.paymentRequest?.fromPlayer;
-      
-      // Allow switching to paying player's perspective
-      if (event.key === String(payingPlayer) && window.MonopolyDeal.currentPerspective !== payingPlayer) {
-        console.log(`Key "${payingPlayer}" pressed - switching to paying player's perspective`);
-        window.MonopolyDeal.currentPerspective = payingPlayer;
-        window.MonopolyDeal.updateAllPlayerUIs();
-        window.MonopolyDeal.updateGameStatus(`Switched to Player ${payingPlayer}'s perspective to make payment`);
-        return;
-      }
-      
-      console.log('Payment is pending, perspective switching limited');
-      return;
-    }
-    
-    // Check which key was pressed
+    // Handle perspective switching keyboard shortcuts - always available
     switch (event.key) {
       case '1':
         // Switch to Player 1's perspective
         console.log('Key "1" pressed - attempting to switch to Player 1 perspective');
         if (window.MonopolyDeal.currentPerspective !== 1) {
-          window.MonopolyDeal.currentPerspective = 1;
-          
-          // Update UI elements
-          window.MonopolyDeal.updateAllPlayerUIs();
-          
-          // Remove any existing indicators
-          document.querySelectorAll('.perspective-indicator').forEach(el => el.remove());
-          
-          // Update the current hand area title
-          const currentHandTitle = document.querySelector('.current-hand-area h2');
-          if (currentHandTitle) {
-            currentHandTitle.textContent = `Player 1's Hand`;
-          }
-          
-          // Add perspective indicator
-          const indicatorP1 = document.createElement('div');
-          indicatorP1.className = 'perspective-indicator';
-          indicatorP1.textContent = 'PLAYER 1 VIEW';
-          indicatorP1.style.position = 'fixed';
-          indicatorP1.style.top = '10px';
-          indicatorP1.style.left = '50%';
-          indicatorP1.style.transform = 'translateX(-50%)';
-          indicatorP1.style.backgroundColor = 'rgba(0, 128, 0, 0.7)'; // Green for P1
-          indicatorP1.style.color = 'white';
-          indicatorP1.style.padding = '5px 15px';
-          indicatorP1.style.borderRadius = '15px';
-          indicatorP1.style.fontWeight = 'bold';
-          indicatorP1.style.fontSize = '16px';
-          indicatorP1.style.zIndex = '1000';
-          document.body.appendChild(indicatorP1);
-          
-          // Update button text
-          const switchButton = window.MonopolyDeal.elements.switchPerspectiveButton;
-          if (switchButton) {
-            switchButton.textContent = 'Switch to Player 2';
-          }
-          
-          window.MonopolyDeal.updateGameStatus(`Switched to Player 1's perspective`);
-          window.MonopolyDeal.addToHistory(`Switched to Player 1's perspective via keyboard shortcut`);
+          // Directly set the perspective to Player 1
+          window.MonopolyDeal.currentPerspective = 2; // Set to 2 temporarily so switchPerspective will switch to 1
+          window.MonopolyDeal.switchPerspective();
           console.log('Successfully switched to Player 1 perspective via keyboard shortcut');
         } else {
           console.log('Already in Player 1 perspective');
@@ -101,79 +48,12 @@ window.MonopolyDeal.setupKeyboardShortcuts = function() {
         // Switch to Player 2's perspective
         console.log('Key "2" pressed - attempting to switch to Player 2 perspective');
         if (window.MonopolyDeal.currentPerspective !== 2) {
-          window.MonopolyDeal.currentPerspective = 2;
-          
-          // Update UI elements
-          window.MonopolyDeal.updateAllPlayerUIs();
-          
-          // Remove any existing indicators
-          document.querySelectorAll('.perspective-indicator').forEach(el => el.remove());
-          
-          // Update the current hand area title
-          const currentHandTitle = document.querySelector('.current-hand-area h2');
-          if (currentHandTitle) {
-            currentHandTitle.textContent = `Player 2's Hand`;
-          }
-          
-          // Add perspective indicator
-          const indicatorP2 = document.createElement('div');
-          indicatorP2.className = 'perspective-indicator';
-          indicatorP2.textContent = 'PLAYER 2 VIEW';
-          indicatorP2.style.position = 'fixed';
-          indicatorP2.style.top = '10px';
-          indicatorP2.style.left = '50%';
-          indicatorP2.style.transform = 'translateX(-50%)';
-          indicatorP2.style.backgroundColor = 'rgba(0, 0, 128, 0.7)'; // Blue for P2
-          indicatorP2.style.color = 'white';
-          indicatorP2.style.padding = '5px 15px';
-          indicatorP2.style.borderRadius = '15px';
-          indicatorP2.style.fontWeight = 'bold';
-          indicatorP2.style.fontSize = '16px';
-          indicatorP2.style.zIndex = '1000';
-          document.body.appendChild(indicatorP2);
-          
-          // Update button text
-          const switchButton = window.MonopolyDeal.elements.switchPerspectiveButton;
-          if (switchButton) {
-            switchButton.textContent = 'Switch to Player 1';
-          }
-          
-          window.MonopolyDeal.updateGameStatus(`Switched to Player 2's perspective`);
-          window.MonopolyDeal.addToHistory(`Switched to Player 2's perspective via keyboard shortcut`);
+          // Directly set the perspective to Player 2
+          window.MonopolyDeal.currentPerspective = 1; // Set to 1 temporarily so switchPerspective will switch to 2
+          window.MonopolyDeal.switchPerspective();
           console.log('Successfully switched to Player 2 perspective via keyboard shortcut');
         } else {
           console.log('Already in Player 2 perspective');
-        }
-        break;
-        
-      case '3':
-        // Switch to Spectator perspective (can't see cards or interact)
-        console.log('Key "3" pressed - attempting to switch to Spectator perspective');
-        if (window.MonopolyDeal.currentPerspective !== 3) {
-          window.MonopolyDeal.currentPerspective = 3;
-          
-          // Update UI elements
-          window.MonopolyDeal.updateAllPlayerUIs();
-          
-          // Update player area titles
-          const playerAreaTitle = document.querySelector('.player-area h2');
-          const opponentAreaTitle = document.querySelector('.opponent-area h2');
-          if (playerAreaTitle && opponentAreaTitle) {
-            playerAreaTitle.textContent = "Player 1's Hand";
-            opponentAreaTitle.textContent = "Player 2's Hand";
-          }
-          
-          // Update button text
-          const switchButton = window.MonopolyDeal.elements.switchPerspectiveButton;
-          if (switchButton) {
-            switchButton.textContent = 'Switch to Player 1';
-          }
-          
-          window.MonopolyDeal.updateGameStatus(`Switched to Spectator mode - no interactions allowed`);
-          window.MonopolyDeal.addToHistory(`Switched to Spectator mode via keyboard shortcut`);
-          console.log('Successfully switched to Spectator perspective via keyboard shortcut');
-        } else {
-          console.log('Already in Spectator perspective');
         }
         break;
         
@@ -202,42 +82,72 @@ window.MonopolyDeal.updateAllPlayerUIs = function() {
 
 // Update button states based on game state
 window.MonopolyDeal.updateButtonStates = function() {
-  const gameState = window.MonopolyDeal.gameState;
+  const gameStarted = window.MonopolyDeal.gameState.gameStarted;
+  const currentPlayer = window.MonopolyDeal.gameState.currentPlayer;
+  const hasDrawnCards = window.MonopolyDeal.gameState.hasDrawnCards;
+  const paymentPending = window.MonopolyDeal.gameState.paymentPending;
+  const currentPerspective = window.MonopolyDeal.currentPerspective;
   
-  // If payment is pending, disable all buttons except for the switch perspective
-  if (gameState.paymentPending) {
-    // If we're the paying player, buttons are determined by payment handler
-    // For all other perspectives, disable action buttons
-    if (gameState.paymentRequest && window.MonopolyDeal.currentPerspective !== gameState.paymentRequest.fromPlayer) {
-      if (window.MonopolyDeal.elements.drawButton) {
-        window.MonopolyDeal.elements.drawButton.disabled = true;
-      }
-      if (window.MonopolyDeal.elements.endTurnButton) {
-        window.MonopolyDeal.elements.endTurnButton.disabled = true;
-      }
-      return;
+  // Get button references
+  const startButton = window.MonopolyDeal.elements.startButton;
+  const drawButton = window.MonopolyDeal.elements.drawButton;
+  const endTurnButton = window.MonopolyDeal.elements.endTurnButton;
+  const switchPerspectiveButton = window.MonopolyDeal.elements.switchPerspectiveButton;
+  const paymentActionContainer = document.getElementById('payment-action-container');
+  const makePaymentButton = document.getElementById('make-payment-btn');
+  
+  // Start button: Disabled if game already started
+  if (startButton) {
+    startButton.disabled = gameStarted;
+  }
+  
+  // Draw button: Enabled only if it's the current player's turn,
+  // the current perspective matches, game started, cards haven't been drawn yet,
+  // and no payment is pending
+  if (drawButton) {
+    drawButton.disabled = !gameStarted || 
+                          currentPerspective !== currentPlayer ||
+                          hasDrawnCards ||
+                          paymentPending;
+  }
+  
+  // End turn button: Enabled only if it's the current player's turn,
+  // the current perspective matches, game started, cards have been drawn,
+  // and no payment is pending
+  if (endTurnButton) {
+    endTurnButton.disabled = !gameStarted || 
+                            currentPerspective !== currentPlayer ||
+                            !hasDrawnCards ||
+                            paymentPending;
+  }
+  
+  // Switch perspective button: Always enabled if game started
+  if (switchPerspectiveButton) {
+    switchPerspectiveButton.disabled = !gameStarted;
+    switchPerspectiveButton.textContent = `Switch to Player ${currentPerspective === 1 ? '2' : '1'}'s View`;
+    switchPerspectiveButton.title = `Switch to Player ${currentPerspective === 1 ? '2' : '1'}'s perspective`;
+  }
+  
+  // Handle payment action button visibility
+  if (paymentActionContainer && makePaymentButton) {
+    // Only show payment button when payment is pending AND the current perspective is the paying player
+    const isPaymentPending = paymentPending && 
+                            window.MonopolyDeal.gameState.paymentRequest && 
+                            window.MonopolyDeal.gameState.paymentRequest.fromPlayer === currentPerspective;
+                            
+    // Update visibility
+    if (isPaymentPending) {
+      paymentActionContainer.classList.add('visible');
+      
+      // Update payment button details
+      const paymentRequest = window.MonopolyDeal.gameState.paymentRequest;
+      makePaymentButton.textContent = `Pay $${paymentRequest.amount}M to Player ${paymentRequest.toPlayer}`;
+    } else {
+      paymentActionContainer.classList.remove('visible');
     }
   }
   
-  // Draw cards button
-  if (window.MonopolyDeal.elements.drawButton) {
-    window.MonopolyDeal.elements.drawButton.disabled = !(
-      gameState.gameStarted && 
-      gameState.currentPlayer === window.MonopolyDeal.currentPerspective && 
-      !gameState.hasDrawnCards &&
-      !gameState.paymentPending
-    );
-  }
-  
-  // End turn button
-  if (window.MonopolyDeal.elements.endTurnButton) {
-    window.MonopolyDeal.elements.endTurnButton.disabled = !(
-      gameState.gameStarted && 
-      gameState.currentPlayer === window.MonopolyDeal.currentPerspective && 
-      gameState.hasDrawnCards &&
-      !gameState.paymentPending
-    );
-  }
+  return true;
 };
 
 // Set up the game board and all event listeners
@@ -348,40 +258,37 @@ window.MonopolyDeal.setupDirectEventListeners = function() {
   } else {
     console.error('Switch perspective button element not found');
   }
+  
+  // Make payment button
+  if (window.MonopolyDeal.elements.makePaymentButton) {
+    window.MonopolyDeal.elements.makePaymentButton.addEventListener('click', function() {
+      console.log('Make payment button clicked');
+      
+      // Only the player who needs to pay can process the payment
+      const paymentRequest = window.MonopolyDeal.gameState.paymentRequest;
+      if (paymentRequest && window.MonopolyDeal.currentPerspective === paymentRequest.fromPlayer) {
+        window.MonopolyDeal.processPayment();
+      } else {
+        window.MonopolyDeal.updateGameStatus('Only the player who needs to pay can use this button');
+      }
+    });
+    console.log('Make payment button listener added');
+  } else {
+    console.error('Make payment button element not found');
+  }
 };
 
 // Switch between player perspectives (1 -> 2 -> 1)
 window.MonopolyDeal.switchPerspective = function() {
   console.log('Switching perspective...');
   
-  // If payment is pending, only allow switching to the paying player's perspective
-  if (window.MonopolyDeal.gameState.paymentPending) {
-    const payingPlayer = window.MonopolyDeal.gameState.paymentRequest?.fromPlayer;
-    console.log(`Payment pending. Paying player: ${payingPlayer}, Current perspective: ${window.MonopolyDeal.currentPerspective}`);
-    
-    // If not already on paying player's perspective, switch to it
-    if (window.MonopolyDeal.currentPerspective !== payingPlayer) {
-      console.log(`Switching to paying player's perspective: ${payingPlayer}`);
-      window.MonopolyDeal.currentPerspective = payingPlayer;
-      
-      // Force re-showing the payment modal
-      window.MonopolyDeal.removePaymentIndicator();
-      window.MonopolyDeal.showPaymentIndicator();
-      
-      // Update UIs and game status
-      window.MonopolyDeal.updateAllPlayerUIs();
-      window.MonopolyDeal.updateGameStatus(`Switched to Player ${payingPlayer}'s perspective to make payment`);
-      window.MonopolyDeal.addToHistory(`Switched to Player ${payingPlayer}'s perspective to make payment`);
-      return;
-    }
-    
-    // Already on paying player's perspective, show message
-    window.MonopolyDeal.updateGameStatus(`Payment required: Player ${payingPlayer} must complete the payment first`);
-    return;
-  }
+  // IMPORTANT: Always remove any existing perspective indicators first
+  document.querySelectorAll('.perspective-indicator').forEach(el => {
+    // Remove immediately without animation to prevent UI shifts
+    el.remove();
+  });
   
-  // Remove any previous perspective indicators
-  document.querySelectorAll('.perspective-indicator').forEach(el => el.remove());
+  // Always allow perspective switching (remove payment restrictions)
   
   // Remove active class from all player areas
   document.querySelectorAll('.player-area, .opponent-area').forEach(el => {
@@ -395,69 +302,40 @@ window.MonopolyDeal.switchPerspective = function() {
     window.MonopolyDeal.currentPerspective = 1;
   }
   
-  // Update all player UIs
-  window.MonopolyDeal.updateAllPlayerUIs();
+  // Show which player we're now seeing
+  console.log(`Now viewing from Player ${window.MonopolyDeal.currentPerspective}'s perspective`);
   
-  // Update the current hand area title to show which player's perspective
-  const currentHandTitle = document.querySelector('.current-hand-area h2');
-  if (currentHandTitle) {
-    currentHandTitle.textContent = `Player ${window.MonopolyDeal.currentPerspective}'s Hand (Your View)`;
-  }
-  
-  // Add highlighting to the current perspective's area
-  const playerAreas = [
-    { area: document.querySelector('.opponent-area'), player: 1 },
-    { area: document.querySelector('.player-area'), player: 2 }
-  ];
-  
-  playerAreas.forEach(({ area, player }) => {
-    if (area) {
-      if (player === window.MonopolyDeal.currentPerspective) {
-        area.classList.add('active');
-      }
-    }
-  });
-  
-  // Add a temporary fixed notification at the top of the screen
-  const colors = {
-    1: { bg: '#f44336', text: 'white' },  // Red for Player 1
-    2: { bg: '#2196f3', text: 'white' }   // Blue for Player 2
-  };
-  
-  const fixedIndicator = document.createElement('div');
-  fixedIndicator.className = 'perspective-indicator';
-  fixedIndicator.textContent = `NOW VIEWING PLAYER ${window.MonopolyDeal.currentPerspective}`;
-  fixedIndicator.style.position = 'fixed';
-  fixedIndicator.style.top = '10px';
-  fixedIndicator.style.left = '50%';
-  fixedIndicator.style.transform = 'translateX(-50%)';
-  fixedIndicator.style.backgroundColor = colors[window.MonopolyDeal.currentPerspective].bg;
-  fixedIndicator.style.color = colors[window.MonopolyDeal.currentPerspective].text;
-  fixedIndicator.style.padding = '8px 20px';
-  fixedIndicator.style.borderRadius = '20px';
-  fixedIndicator.style.fontWeight = 'bold';
-  fixedIndicator.style.fontSize = '16px';
-  fixedIndicator.style.zIndex = '1000';
-  fixedIndicator.style.boxShadow = '0 3px 10px rgba(0,0,0,0.2)';
-  document.body.appendChild(fixedIndicator);
-  
-  // Auto-hide fixed indicator after 3 seconds
-  setTimeout(() => {
-    fixedIndicator.style.transition = 'opacity 0.5s ease';
-    fixedIndicator.style.opacity = '0';
-    
-    // Remove after fade out
-    setTimeout(() => fixedIndicator.remove(), 500);
-  }, 3000);
-  
-  // Update button text
+  // Update the button text
   const switchButton = window.MonopolyDeal.elements.switchPerspectiveButton;
   if (switchButton) {
     switchButton.textContent = `Switch to Player ${window.MonopolyDeal.currentPerspective === 1 ? '2' : '1'}'s View`;
   }
   
-  // Update game history with perspective change
-  window.MonopolyDeal.addToHistory(`Switched to Player ${window.MonopolyDeal.currentPerspective}'s perspective`);
+  // Update UIs to reflect the new perspective
+  window.MonopolyDeal.updateAllPlayerUIs();
+  
+  // Update game status message to indicate switch
+  window.MonopolyDeal.updateGameStatus(`Switched to Player ${window.MonopolyDeal.currentPerspective}'s perspective`);
+  
+  // If there's a payment pending, show a hint on what to do
+  if (window.MonopolyDeal.gameState.paymentPending) {
+    const paymentRequest = window.MonopolyDeal.gameState.paymentRequest;
+    const payingPlayer = paymentRequest.fromPlayer;
+    
+    if (window.MonopolyDeal.currentPerspective === payingPlayer) {
+      // Show hint that this player needs to pay
+      setTimeout(() => {
+        window.MonopolyDeal.updateGameStatus(`Player ${payingPlayer} needs to pay $${paymentRequest.amount}M to Player ${paymentRequest.toPlayer}`);
+      }, 2000);
+    } else {
+      // Show hint that the other player needs to pay
+      setTimeout(() => {
+        window.MonopolyDeal.updateGameStatus(`Waiting for Player ${payingPlayer} to pay $${paymentRequest.amount}M to Player ${paymentRequest.toPlayer}`);
+      }, 2000);
+    }
+  }
+  
+  return true;
 };
 
 // Export functions

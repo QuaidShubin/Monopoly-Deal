@@ -72,6 +72,8 @@
                 <div id="action-pile" class="card-pile">
                     <div class="card action-pile-placeholder">Last Action</div>
                 </div>
+                
+                <!-- Game history container moved to left sidebar -->
                 <div class="game-history-container">
                     <h3>Game History</h3>
                     <div id="game-history" class="game-history"></div>
@@ -86,6 +88,7 @@
                 <div class="game-status-container">
                     <p id="game-status" class="status-message">Welcome to Monopoly Deal! Click 'Start New Game' to begin.</p>
                 </div>
+                <!-- Game history container moved to left sidebar -->
             </header>
 
             <div class="game-board">
@@ -153,6 +156,10 @@
                 </div>
                 <div class="control-button">
                     <button id="switch-perspective-btn" class="big-button secondary-button">Switch Perspective</button>
+                </div>
+                <!-- Payment action button - hidden by default -->
+                <div id="payment-action-container" class="payment-action-button">
+                    <button id="make-payment-btn" class="big-button">Make Payment</button>
                 </div>
             </div>
         </div>

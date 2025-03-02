@@ -18,7 +18,8 @@
 - ✅ Money card placement
 - ✅ Action card handling (Pass Go, Rent, etc.)
 - ✅ Card action modal system with availability indicators
-- ✅ Enhanced payment system with visual progress tracking
+- ✅ Enhanced payment system with denomination-based selection and visual progress tracking
+- ✅ Keyboard shortcuts for perspective switching (1 for Player 1, 2 for Player 2)
 
 ### User Interface
 
@@ -37,7 +38,9 @@
 - ✅ Game history sidebar
 - ✅ Center status updates
 - ✅ Card styling and visual differentiation
-- ✅ Improved payment modal with progress tracking
+- ✅ Completely redesigned payment interface with denomination-based selection
+- ✅ Improved animations and visual feedback for user interactions
+- ✅ Fixed button positioning to prevent UI elements from moving out of view
 
 ### Card Interactions
 
@@ -51,7 +54,7 @@
 - ✅ Playing action cards with options
 - ✅ Handling Pass Go (Draw 2) cards
 - ✅ Basic rent collection
-- ✅ Payment system with asset selection and progress tracking
+- ✅ Payment system with denomination-based selection and visual progress tracking
 
 ## Partially Working / In Progress
 
@@ -88,13 +91,29 @@
 
 The game is in a playable state with the following recent changes:
 
-1. **Enhanced Payment System UI**: Redesigned the payment interface with a cleaner UI, progress bar, and simplified payment flow
-2. **Improved Selection Flow**: Added better visual feedback for selecting payment assets
-3. **Streamlined Payment Process**: Made the payment process more intuitive with clear button states and animations
-4. **Progress Visualization**: Added a progress bar that shows how much of the required payment amount has been selected
-5. **Simplified UI**: Simplified the payment UI to make it easier to understand and use
+1. **Completely Redesigned Payment UI**: Implemented a denomination-based selection system with +/- controls for each money denomination
+2. **Enhanced Visual Feedback**: Added animations, ripple effects, and visual cues throughout the interface
+3. **Improved Payment Flow**: Created a more intuitive payment process with clear visual indicators and progress tracking
+4. **Keyboard Shortcuts**: Added keyboard shortcuts for perspective switching (1 for Player 1, 2 for Player 2)
+5. **Fixed UI Issues**: Resolved button positioning problems and improved overall UI consistency
 
 ## Recent Fixes
+
+### April 2024
+
+- Completely redesigned the payment interface with a denomination-based selection system
+- Implemented intuitive +/- controls for each money denomination
+- Added animations and visual feedback for payment interactions
+- Created a "MAKE PAYMENT" button that enables when sufficient funds are selected
+- Implemented keyboard shortcuts for switching player perspectives
+- Fixed button positioning issues to prevent UI elements from moving out of view
+- Added ripple effects to counter buttons for better interaction feedback
+- Improved the visual appearance of selectable payment assets with pulsing animations
+- Enhanced the progress bar with gradient colors and smooth transitions
+- Added hover effects and visual feedback throughout the payment interface
+- Removed incomplete spectator mode to prevent confusion
+- Ensured keyboard shortcuts work consistently with the game state
+- Made sure perspective switching is properly restricted during payment scenarios
 
 ### February 25, 2024
 
@@ -160,6 +179,9 @@ The game is in a playable state with the following recent changes:
 13. **Enhanced discard functionality**: Fixed discardCard to properly update UI and handle timeouts
 14. **Added debug toggle for opponent cards**: Implemented a toggle to show/hide opponent cards for debugging
 15. **Improved UI organization**: Created a dedicated ui.js file for UI helper functions
+16. **Fixed button positioning**: Resolved issues with buttons moving out of view during perspective switching
+17. **Enhanced payment UI**: Completely redesigned the payment interface with denomination-based selection
+18. **Improved keyboard shortcuts**: Added consistent keyboard shortcuts for perspective switching
 
 Testing should now confirm that cards can be clicked, action modals appear correctly, and basic card actions function properly, allowing for normal gameplay progression. The centralized validation system should provide clear, specific error messages instead of "Unknown reason" errors.
 
@@ -196,19 +218,27 @@ Testing should now confirm that cards can be clicked, action modals appear corre
 
 ### Payment System Improvements
 
-- ✅ Redesigned payment modal with more intuitive layout
-- ✅ Added progress bar to visualize payment completion
-- ✅ Improved visual feedback for payment selection
-- ✅ Added payment completion animation
-- ✅ Simplified payment flow with better button states
+- ✅ Completely redesigned payment interface with denomination-based selection
+- ✅ Implemented intuitive +/- controls for each money denomination
+- ✅ Added animations and visual feedback for payment interactions
+- ✅ Created a "MAKE PAYMENT" button that enables when sufficient funds are selected
+- ✅ Enhanced progress bar with gradient colors and smooth transitions
 
 ### UI Enhancements
 
-- ✅ Enhanced CSS styling for payment components
-- ✅ Improved selectable asset visualization
-- ✅ Added gradient-colored progress bar for better feedback
-- ✅ Made selected payment items more visually distinct
-- ✅ Added cleaner payment confirmation flow
+- ✅ Added ripple effects to counter buttons for better interaction feedback
+- ✅ Improved the visual appearance of selectable payment assets with pulsing animations
+- ✅ Added hover effects and visual feedback throughout the payment interface
+- ✅ Fixed button positioning issues to prevent UI elements from moving out of view
+- ✅ Improved the overall visual consistency of the game interface
+
+### Keyboard Shortcuts
+
+- ✅ Implemented keyboard shortcuts for switching player perspectives (1 for Player 1, 2 for Player 2)
+- ✅ Ensured keyboard shortcuts work consistently with the game state
+- ✅ Removed incomplete spectator mode to prevent confusion
+- ✅ Made sure perspective switching is properly restricted during payment scenarios
+- ✅ Improved the visual feedback when switching perspectives
 
 ### Visual Improvements
 
@@ -222,10 +252,12 @@ Testing should now confirm that cards can be clicked, action modals appear corre
 
 - ✅ Accurate rent calculation based on property set completeness
 - ✅ Property cards now show rent values for 1 card, 2+ cards, and complete sets
-- ✅ Payment system for rent and other payments
+- ✅ Improved payment system for rent and other payments with denomination-based selection
 
 ### Bug Fixes
 
-- ✅ Fixed payment modal to properly handle transactions
+- ✅ Fixed payment interface to properly handle transactions
 - ✅ Corrected property card styling and class names
 - ✅ Improved card creation function to handle all card types consistently
+- ✅ Fixed button positioning issues during perspective switching
+- ✅ Ensured consistent behavior of keyboard shortcuts across different game states

@@ -4,35 +4,47 @@
 
 We're currently improving the user interface and game mechanics:
 
-1. **Payment System Enhancement**: Redesigned the payment interface with a cleaner UI, progress bar, and simplified payment flow.
-2. **UI Improvements**: Made UI elements more intuitive and responsive with better visual feedback.
-3. **Game Flow Refinement**: Streamlined the payment process to make it more user-friendly.
+1. **Payment System Enhancement**: Completely redesigned the payment interface with a denomination-based selection system, visual progress tracking, and simplified payment flow.
+2. **UI Improvements**: Enhanced UI elements with better animations, visual feedback, and responsive design.
+3. **Game Flow Refinement**: Streamlined the payment process and improved keyboard shortcuts for better player experience.
 
 ## Recent Changes
 
-### 1. Payment System UI Enhancements
+### 1. Payment System UI Overhaul
 
-- Redesigned the payment modal with a more intuitive layout
+- Completely redesigned the payment interface with a denomination-based selection system
+- Implemented intuitive +/- controls for each money denomination
 - Added a prominent progress bar that shows payment completion percentage
-- Simplified the payment flow with clearer button labels
-- Added visual feedback for payment selection with improved status indicators
-- Added animation when completing payment for better user feedback
-- Updated payment button to show different text based on partial or full payment
+- Created a clear visual distinction for selected denominations
+- Added animations and visual feedback for payment interactions
+- Implemented a "MAKE PAYMENT" button that enables when sufficient funds are selected
+- Improved the payment flow with clearer visual indicators and feedback
 
 ### 2. UI Improvements
 
-- Enhanced CSS styling for payment-related components
-- Improved the visual appearance of selectable payment assets
-- Made the progress bar gradient-colored for better visual feedback
-- Made selected payment items more visually distinct
-- Added a cleaner payment confirmation flow with delayed closing
+- Enhanced CSS styling with better animations and transitions
+- Added ripple effects to counter buttons for better interaction feedback
+- Improved the visual appearance of selectable payment assets with pulsing animations
+- Made the progress bar gradient-colored with smooth transitions
+- Added hover effects and visual feedback throughout the payment interface
+- Fixed button positioning issues to prevent UI elements from moving out of view
+- Improved the overall visual consistency of the game interface
 
-### 3. Code Cleanup
+### 3. Keyboard Shortcuts
+
+- Implemented keyboard shortcuts for switching player perspectives (1 for Player 1, 2 for Player 2)
+- Ensured keyboard shortcuts work consistently with the game state
+- Removed incomplete spectator mode to prevent confusion
+- Made sure perspective switching is properly restricted during payment scenarios
+- Improved the visual feedback when switching perspectives
+
+### 4. Code Improvements
 
 - Simplified the payment processing code
-- Removed redundant payment status indicators
 - Improved code organization for payment-related functions
-- Added better error handling and user feedback
+- Enhanced error handling and user feedback
+- Fixed issues with button states and UI updates
+- Ensured consistent behavior across different game states
 
 ## Previous Investigation
 
@@ -62,9 +74,9 @@ The investigation focused on these areas:
 
 ### Immediate Priorities
 
-1. **Test Payment System**: Verify that the new payment system works correctly with both partial and full payments
-2. **Test Game Flow**: Ensure the entire game flow works smoothly with the new payment system
-3. **Refine Visual Design**: Further improve the visual design of the payment UI if needed
+1. **Test Payment System**: Verify that the new denomination-based payment system works correctly
+2. **Test Keyboard Shortcuts**: Ensure perspective switching works properly in all game states
+3. **Refine Visual Design**: Further improve the visual design of the game UI
 4. **Add Missing Card Actions**: Implement any missing card action types
 
 ### Medium-Term Improvements
@@ -87,7 +99,7 @@ The investigation focused on these areas:
 3. **Debug-First Approach**: Add comprehensive logging to trace issues with game flow and UI interactions
 4. **Error Handling**: Add progressive error handling focusing first on critical paths
 5. **Direct Card Handling**: Directly call `playCardWithIndex` from the card click handler to bypass event complexities
-6. **Payment UI**: Use a progress bar as the primary indicator of payment status with clear visual feedback
+6. **Payment UI**: Use a denomination-based selection system with +/- controls and a progress bar for payment status
 
 ## Technical Questions to Resolve
 
@@ -96,7 +108,7 @@ The investigation focused on these areas:
 3. How should we implement the rule that you can play 3 cards per turn?
 4. How to handle special cases like Double The Rent which counts as its own action?
 5. What's the best approach to implement the payment system for cards like Debt Collector?
-6. Should we add animation effects for card movements to enhance user experience?
+6. Should we add more animation effects for card movements to enhance user experience?
 7. How to handle complex action cards that require multiple steps (e.g., Deal Breaker)?
 8. What's the best approach for implementing the Just Say No counter-action?
 9. How to properly validate property sets for actions like Deal Breaker?

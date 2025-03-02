@@ -19,12 +19,14 @@ body {
     overflow: hidden;
 }
 
-/* New three-column layout */
+/* Game wrapper - improved column layout */
 .game-wrapper {
     width: 100%;
     height: 100vh;
     display: grid;
     grid-template-columns: 200px 1fr 180px;
+    grid-template-rows: 100vh;
+    overflow: hidden;
 }
 
 /* Left sidebar styles */
@@ -36,12 +38,15 @@ body {
     box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
     display: flex;
     flex-direction: column;
+    overflow-y: hidden;
+    grid-column: 1;
 }
 
 .left-sidebar .sidebar-content {
     display: flex;
     flex-direction: column;
     height: 100%;
+    padding-top: 20px;
 }
 
 .left-sidebar h3 {
@@ -52,28 +57,48 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-/* Right sidebar styles */
-.right-sidebar {
-    background-color: #1b5e20;
-    color: white;
-    height: 100%;
-    padding: 15px;
-    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+/* Main container */
+.game-container {
+    grid-column: 2;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
 }
 
+/* Right sidebar styles - fixed position */
+.right-sidebar {
+    background-color: #1b5e20;
+    color: white;
+    height: 100vh;
+    padding: 15px;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow-y: hidden;
+    grid-column: 3;
+}
+
+/* Buttons container - fixed position */
 .right-sidebar .sidebar-content {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    height: 100%;
-    justify-content: center;
+    height: auto;
+    width: 100%;
+    justify-content: flex-start;
+    padding-top: 20px;
+    position: fixed;
+    top: 0;
+    width: 150px; /* Set fixed width */
 }
 
 .control-button {
     width: 100%;
     margin-bottom: 10px;
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0; /* Prevent buttons from shrinking */
 }
 
 /* Big button styles */
@@ -87,6 +112,8 @@ body {
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
     transition: all 0.2s ease;
+    position: relative;
+    z-index: 10;
 }
 
 .big-button:hover {
@@ -133,15 +160,6 @@ body {
     background-color: #1976d2;
 }
 
-/* Main game container */
-.game-container {
-    height: 100vh;
-    background-color: #fff;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
 /* Header styles */
 header {
     background-color: #1b5e20;
@@ -165,6 +183,7 @@ header h1 {
     background-color: #e8f5e9;
     padding: 8px 15px;
     border-radius: 4px;
+    margin-bottom: 10px;
 }
 
 .status-message {
@@ -174,286 +193,46 @@ header h1 {
     color: #1b5e20;
 }
 
-/* Game board styles */
-.game-board {
-    flex: 1;
-    display: grid;
-    grid-template-rows: 1fr 1fr 1fr;
-    grid-template-areas: 
-        "player1"
-        "player2"
-        "current-hand";
-    overflow: hidden;
-}
-
-/* Player areas */
-.opponent-area, .player-area {
-    padding: 10px;
-    position: relative;
-}
-
-.opponent-area {
-    grid-area: player1;
-    background-color: #f5f5f5;
-    border-bottom: 1px solid #e0e0e0;
-}
-
-.player-area {
-    grid-area: player2;
-    background-color: #e8f5e9;
-    border-bottom: 1px solid #c8e6c9;
-}
-
-.current-hand-area {
-    grid-area: current-hand;
-    background-color: #e3f2fd;
-    padding: 10px;
-    border-top: 1px solid #bbdefb;
-}
-
-.opponent-area h2, .player-area h2, .current-hand-area h2 {
-    font-size: 16px;
-    margin-bottom: 8px;
-    color: #333;
-}
-
-.current-hand-area h2 {
-    color: #1565c0;
-}
-
-.player-section {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-}
-
-/* Card containers */
-.card-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-bottom: 8px;
-    min-height: 100px;
-    width: 100%;
-    overflow-x: auto;
-    padding-bottom: 8px;
-}
-
-.hand-container {
-    padding: 8px;
-    background-color: rgba(0, 0, 0, 0.05);
-    border-radius: 8px;
-}
-
-/* Player assets */
-.player-assets {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.asset-section {
-    width: 100%;
-}
-
-/* Compact money section */
-.money-section {
-    margin-bottom: 10px;
-}
-
-.money-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
-}
-
-.money-header h3 {
-    font-size: 14px;
-    color: #555;
-    margin: 0;
-}
-
-.money-total-compact {
-    font-size: 14px;
-    font-weight: bold;
-    color: #4caf50;
-}
-
-.asset-section h3 {
-    font-size: 14px;
-    margin-bottom: 5px;
-    color: #555;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 3px;
-}
-
-.money-container {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 5px;
-    padding: 5px;
-    background-color: rgba(0, 0, 0, 0.03);
-    border-radius: 4px;
-    overflow-x: auto;
-    white-space: nowrap;
-    min-height: 70px;
-}
-
-/* Adjust property containers to work with new layout */
-.properties-container {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 8px;
-    padding: 8px;
-    background-color: rgba(0, 0, 0, 0.03);
-    border-radius: 4px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    height: 100%;
-    align-items: flex-start;
-    align-content: flex-start;
-}
-
-/* Property group styles - updated for two-row layout */
-.property-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin: 5px;
-    padding: 20px 8px 8px 8px; /* Increased top padding for header */
-    border-radius: 6px;
-    min-height: auto;
-    max-height: 170px;
-    width: auto;
-    min-width: 70px;
-    max-width: 300px;
-    position: relative;
-    flex-shrink: 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-/* Color-specific property group backgrounds */
-.brown-group { background-color: rgba(121, 85, 72, 0.15); }
-.blue-group { background-color: rgba(33, 150, 243, 0.15); }
-.green-group { background-color: rgba(76, 175, 80, 0.15); }
-.red-group { background-color: rgba(244, 67, 54, 0.15); }
-.yellow-group { background-color: rgba(255, 235, 59, 0.15); }
-.orange-group { background-color: rgba(255, 152, 0, 0.15); }
-.pink-group { background-color: rgba(233, 30, 99, 0.15); }
-.light-blue-group { background-color: rgba(3, 169, 244, 0.15); }
-.utility-group { background-color: rgba(158, 158, 158, 0.15); }
-.railroad-group { background-color: rgba(33, 33, 33, 0.15); }
-
-/* Property card rows within property group */
-.property-row {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
-    gap: 3px;
-    min-height: 65px;
-    overflow-x: visible;
-    padding: 2px;
-}
-
-/* Empty rows shouldn't take up space */
-.property-row:empty {
-    min-height: 0;
-    height: 0;
-    padding: 0;
-    margin: 0;
-}
-
-/* Property group header */
-.property-group-header {
-    position: absolute;
-    top: 2px;
-    left: 8px;
-    font-size: 10px;
-    font-weight: bold;
-    color: #333;
-    background-color: rgba(255, 255, 255, 0.7);
-    padding: 2px 5px;
-    border-radius: 3px;
-    z-index: 2;
-}
-
-/* Property card styles - scaled down with hover enlargement */
-.property-card.played {
-    width: 45px;
-    height: 68px;
-    transform: scale(0.95);
-    margin: 0;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, z-index 0.01s linear;
-    z-index: 1;
-}
-
-.property-card.played:hover {
-    transform: scale(1.4);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    z-index: 50;
-}
-
-/* Adjust property card text for smaller size */
-.property-card.played .property-name {
-    font-size: 8px;
-    top: 3px;
-}
-
-.property-card.played .property-value {
-    font-size: 10px;
-    bottom: 3px;
-    right: 3px;
-}
-
-.property-card.played:hover .property-name {
-    font-size: 11px;
-}
-
-.property-card.played:hover .property-value {
-    font-size: 14px;
-}
-
-/* Card pile styles in left sidebar */
-.left-sidebar .card-pile {
-    width: 100%;
-    aspect-ratio: 2/3;
-    margin-bottom: 15px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #e0e0e0;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
-/* Game history styles */
+/* Game history styles - updated for left sidebar placement */
 .game-history-container {
-    margin-top: auto;
+    width: 100%;
     display: flex;
     flex-direction: column;
-    flex-grow: 1;
+    margin-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    padding-top: 15px;
+    flex: 1;
 }
 
 .game-history-container h3 {
-    margin-top: 10px;
+    font-size: 16px;
+    margin-bottom: 8px;
+    text-align: center;
+    color: white;
 }
 
 .game-history {
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(255, 255, 255, 0.1);
     border-radius: 4px;
     padding: 10px;
-    color: #333;
+    color: rgba(255, 255, 255, 0.9);
     overflow-y: auto;
     font-size: 12px;
-    height: 100%;
-    flex-grow: 1;
+    height: 350px; /* Taller height for more visible history */
+    min-height: 350px;
+    display: flex;
+    flex-direction: column; /* Standard column direction for more intuitive scrolling */
 }
 
 .history-item {
     padding: 4px 0;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.history-item:first-child {
+    border-top: none;
+    font-weight: bold; /* Make the newest message stand out */
+    color: rgba(255, 255, 255, 1.0);
 }
 
 .history-item:last-child {
@@ -519,41 +298,87 @@ header h1 {
 }
 
 /* Money denomination box styles */
+.money-section-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0;
+    color: #333;
+    padding: 5px 0;
+}
+
+/* New horizontal money layout */
+.money-section {
+    position: relative;
+    margin: 3px 0;
+    padding: 3px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: auto;
+    border-radius: 4px;
+}
+
+.money-label {
+    font-size: 13px;
+    font-weight: bold;
+    color: #555;
+    margin: 0;
+    min-width: 50px;
+}
+
 .money-denomination-container {
     display: flex;
     flex-wrap: nowrap;
-    gap: 5px;
+    gap: 3px;
     justify-content: flex-start;
+    background-color: transparent;
+    padding: 0;
+    border-radius: 0;
+    position: relative;
+    flex: 1;
     overflow-x: auto;
-    padding-bottom: 5px;
-    width: 100%;
 }
 
 .money-denomination-box {
+    flex: 0 0 auto;
+    margin: 0 1px;
+    padding: 2px 5px;
+    border-radius: 3px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    padding: 5px;
-    border-radius: 4px;
-    min-width: 40px;
+    justify-content: space-between;
     position: relative;
-    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-    transition: transform 0.2s ease;
-}
-
-.money-denomination-box:hover {
-    transform: translateY(-3px);
-}
-
-.money-denomination-count {
-    font-weight: bold;
-    font-size: 14px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    background-color: white;
+    min-width: 60px;
+    min-height: 24px;
+    max-height: 24px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    text-align: center;
 }
 
 .money-denomination-value {
-    font-size: 12px;
     font-weight: bold;
+    font-size: 12px;
+    color: #333;
+    margin-right: 5px;
+}
+
+.money-denomination-count {
+    font-size: 12px;
+    color: #666;
+    font-weight: bold;
+}
+
+/* Payment button positioned outside money container */
+.payment-button-container {
+    display: none;
+}
+
+/* Keyboard shortcuts tooltip */
+.keyboard-shortcut-hint {
+    display: none;
 }
 
 /* Money card styles */
@@ -1276,16 +1101,16 @@ header h1 {
 /* Responsive adjustments */
 @media (max-width: 1024px) {
     .game-wrapper {
-        grid-template-columns: 160px 1fr 160px;
+        grid-template-columns: 150px 1fr 150px;
     }
     
     .left-sidebar, .right-sidebar {
-        padding: 10px;
+        width: 150px;
     }
     
     .big-button {
-        padding: 12px 8px;
         font-size: 14px;
+        padding: 8px 15px;
     }
     
     .card {
@@ -1301,12 +1126,13 @@ header h1 {
     
     .left-sidebar h3, .game-history-container h3 {
         font-size: 14px;
-        margin-bottom: 10px;
+        margin-bottom: 5px;
     }
     
     .money-denomination-box {
-        min-width: 35px;
-        padding: 3px;
+        min-width: 60px;
+        min-height: 28px;
+        max-height: 28px;
     }
     
     .money-denomination-count {
@@ -1314,7 +1140,7 @@ header h1 {
     }
     
     .money-denomination-value {
-        font-size: 10px;
+        font-size: 12px;
     }
 }
 
@@ -1402,21 +1228,7 @@ header h1 {
 
 /* Perspective indicators for player areas */
 .perspective-indicator {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background-color: #2196f3;
-    color: white;
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-weight: bold;
-    font-size: 12px;
-    z-index: 5;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-.perspective-indicator.active {
-    background-color: #4caf50;
+    display: none;
 }
 
 /* Player areas with position indicators */
@@ -1429,26 +1241,29 @@ header h1 {
     border-left: 3px solid #4caf50;
 }
 
-/* Fixed position banners */
+/* Player banners - removing */
 .player-banner {
-    position: absolute;
-    top: 5px;
-    left: 5px;
-    background-color: rgba(33, 150, 243, 0.7);
-    color: white;
-    padding: 3px 8px;
-    border-radius: 3px;
-    font-size: 10px;
+    display: none;
+}
+
+/* Enhanced player area headers */
+.opponent-area h2, .player-area h2 {
+    font-size: 20px;
+    margin-bottom: 12px;
+    text-align: center;
     font-weight: bold;
-    z-index: 10;
+    padding: 5px;
+    border-radius: 4px;
 }
 
-.player-banner.player1 {
-    background-color: rgba(244, 67, 54, 0.7);
+.opponent-area h2 {
+    color: white;
+    background-color: rgba(244, 67, 54, 0.8); /* Red for Player 1 */
 }
 
-.player-banner.player2 {
-    background-color: rgba(33, 150, 243, 0.7);
+.player-area h2 {
+    color: white;
+    background-color: rgba(33, 150, 243, 0.8); /* Blue for Player 2 */
 }
 
 /* Temporary Message Styling */
@@ -1695,4 +1510,827 @@ header h1 {
     color: #999;
     font-style: italic;
     width: 100%;
+}
+
+/* Payment button in money section */
+.payment-button-container {
+    display: none;
+}
+
+/* Pulsing animation for payment button */
+@keyframes pulse-animation {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 64, 64, 0.7);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(255, 64, 64, 0);
+        transform: scale(1.05);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 64, 64, 0);
+        transform: scale(1);
+    }
+}
+
+/* Payment notification badge */
+.payment-notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(244, 67, 54, 0.9);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 16px;
+    z-index: 1100;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    text-align: center;
+    max-width: 80%;
+}
+
+/* Counter controls for payment UI */
+.counter-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 8px;
+    width: 100%;
+}
+
+.counter-button {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #f1f1f1;
+    border: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    user-select: none;
+}
+
+.counter-button:hover {
+    background-color: #e0e0e0;
+}
+
+.counter-button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.counter-value {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 8px;
+    min-width: 24px;
+    text-align: center;
+}
+
+/* Payment summary in money section */
+.payment-summary {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 10px;
+    margin-top: 10px;
+    text-align: center;
+}
+
+.payment-summary-amount {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+}
+
+.payment-progress {
+    height: 10px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
+    margin: 8px 0;
+    overflow: hidden;
+}
+
+.payment-progress-bar {
+    height: 100%;
+    background-color: #f1c40f;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.payment-progress-bar.sufficient {
+    background-color: #4CAF50;
+}
+
+/* Selected denomination styling */
+.money-denomination-box.selected {
+    border: 2px solid #4CAF50;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+}
+
+/* Improved payment modal styling */
+.payment-denomination-box {
+    margin: 10px;
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10px;
+    width: 120px;
+}
+
+.payment-selection-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+    width: 100%;
+}
+
+.selection-button {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background-color: #f1f1f1;
+    border: 1px solid #ddd;
+    font-weight: bold;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.selection-button:hover:not(:disabled) {
+    background-color: #e0e0e0;
+    transform: scale(1.1);
+}
+
+.selection-button:active:not(:disabled) {
+    transform: scale(0.95);
+}
+
+.selection-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.selection-count {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 10px;
+}
+
+/* Payment modal updates */
+#payment-money-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 10px;
+}
+
+/* New compact payment layout */
+.payment-info-row {
+    margin-bottom: 15px;
+}
+
+#payment-confirm-btn {
+    padding: 10px 20px;
+    font-size: 16px;
+}
+
+.money-denomination-box.selected {
+    border: 2px solid #4CAF50;
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+}
+
+/* Ensure payment button is fixed to the money section */
+.payment-button-container {
+    margin-top: 10px;
+    text-align: center;
+    position: relative;
+    z-index: 5;
+}
+
+/* Payment button pulsing animation */
+@keyframes pulse-animation {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 64, 64, 0.7);
+        transform: scale(1);
+    }
+    50% {
+        box-shadow: 0 0 0 10px rgba(255, 64, 64, 0);
+        transform: scale(1.05);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 64, 64, 0);
+        transform: scale(1);
+    }
+}
+
+.payment-button {
+    animation: pulse-animation 1.5s infinite;
+}
+
+/* Responsive styles for the new money layout */
+@media (max-width: 768px) {
+    .money-section {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 5px;
+    }
+    
+    .money-label {
+        margin-bottom: 5px;
+    }
+    
+    .payment-button-container {
+        margin-left: 0;
+        margin-top: 5px;
+        align-self: flex-end;
+    }
+    
+    .keyboard-shortcut-hint {
+        position: static;
+        margin-top: 5px;
+        font-size: 10px;
+        padding: 3px 6px;
+    }
+}
+
+/* Make sure other responsive styles are maintained */
+@media (max-width: 1024px) {
+    .game-wrapper {
+        grid-template-columns: 150px 1fr 150px;
+    }
+    
+    .left-sidebar, .right-sidebar {
+        width: 150px;
+    }
+    
+    .big-button {
+        font-size: 14px;
+        padding: 8px 15px;
+    }
+    
+    .card {
+        width: 60px;
+        height: 90px;
+    }
+}
+
+@media (max-width: 768px) {
+    .game-wrapper {
+        grid-template-columns: 120px 1fr 120px;
+    }
+    
+    .left-sidebar h3, .game-history-container h3 {
+        font-size: 14px;
+        margin-bottom: 5px;
+    }
+    
+    .money-denomination-box {
+        min-width: 60px;
+        min-height: 28px;
+        max-height: 28px;
+    }
+    
+    .money-denomination-count {
+        font-size: 12px;
+    }
+    
+    .money-denomination-value {
+        font-size: 12px;
+    }
+}
+
+/* Game board styles */
+.game-board {
+    flex: 1;
+    display: grid;
+    grid-template-rows: 1fr 1fr 1fr;
+    grid-template-areas: 
+        "player1"
+        "player2"
+        "current-hand";
+    overflow: hidden;
+}
+
+/* Player areas */
+.opponent-area, .player-area {
+    padding: 10px;
+    position: relative;
+    padding-top: 30px;
+}
+
+.opponent-area {
+    grid-area: player1;
+    background-color: #f5f5f5;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.player-area {
+    grid-area: player2;
+    background-color: #e8f5e9;
+    border-bottom: 1px solid #c8e6c9;
+}
+
+.current-hand-area {
+    grid-area: current-hand;
+    background-color: #e3f2fd;
+    padding: 10px;
+    border-top: 1px solid #bbdefb;
+}
+
+.opponent-area h2, .player-area h2, .current-hand-area h2 {
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.current-hand-area h2 {
+    color: #1565c0;
+}
+
+.player-section {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* Card containers */
+.card-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 8px;
+    min-height: 100px;
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 8px;
+}
+
+.hand-container {
+    padding: 8px;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+}
+
+/* Player assets */
+.player-assets {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.asset-section {
+    width: 100%;
+}
+
+/* Money denomination box styles */
+.money-section-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0;
+    color: #333;
+    padding: 5px 0;
+}
+
+/* Compact money section */
+.money-section {
+    position: relative;
+    margin: 3px 0;
+    padding: 3px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: auto;
+    border-radius: 4px;
+}
+
+.money-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.money-header h3 {
+    font-size: 14px;
+    color: #555;
+    margin: 0;
+}
+
+.money-total-compact {
+    margin-left: 10px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #4caf50;
+}
+
+.asset-section h3 {
+    font-size: 14px;
+    margin-bottom: 5px;
+    color: #555;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 3px;
+}
+
+.money-container {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 5px;
+    padding: 5px;
+    background-color: rgba(0, 0, 0, 0.03);
+    border-radius: 4px;
+    overflow-x: auto;
+    white-space: nowrap;
+    min-height: 70px;
+}
+
+/* Update property containers to work with fixed height */
+.properties-container {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px;
+    background-color: rgba(0, 0, 0, 0.03);
+    border-radius: 4px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 170px; /* Fixed height */
+    min-height: 170px;
+    align-items: flex-start;
+    align-content: flex-start;
+}
+
+/* Property group styles - updated for two-row layout */
+.property-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 5px;
+    padding: 20px 8px 8px 8px; /* Increased top padding for header */
+    border-radius: 6px;
+    min-height: auto;
+    max-height: 170px;
+    width: auto;
+    min-width: 70px;
+    max-width: 300px;
+    position: relative;
+    flex-shrink: 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Color-specific property group backgrounds */
+.brown-group { background-color: rgba(121, 85, 72, 0.15); }
+.blue-group { background-color: rgba(33, 150, 243, 0.15); }
+.green-group { background-color: rgba(76, 175, 80, 0.15); }
+.red-group { background-color: rgba(244, 67, 54, 0.15); }
+.yellow-group { background-color: rgba(255, 235, 59, 0.15); }
+.orange-group { background-color: rgba(255, 152, 0, 0.15); }
+.pink-group { background-color: rgba(233, 30, 99, 0.15); }
+.light-blue-group { background-color: rgba(3, 169, 244, 0.15); }
+.utility-group { background-color: rgba(158, 158, 158, 0.15); }
+.railroad-group { background-color: rgba(33, 33, 33, 0.15); }
+
+/* Property card rows within property group */
+.property-row {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 3px;
+    min-height: 65px;
+    overflow-x: visible;
+    padding: 2px;
+}
+
+/* Empty rows shouldn't take up space */
+.property-row:empty {
+    min-height: 0;
+    height: 0;
+    padding: 0;
+    margin: 0;
+}
+
+/* Property group header */
+.property-group-header {
+    position: absolute;
+    top: 2px;
+    left: 8px;
+    font-size: 10px;
+    font-weight: bold;
+    color: #333;
+    background-color: rgba(255, 255, 255, 0.7);
+    padding: 2px 5px;
+    border-radius: 3px;
+    z-index: 2;
+}
+
+/* Property card styles - scaled down with hover enlargement */
+.property-card.played {
+    width: 45px;
+    height: 68px;
+    transform: scale(0.95);
+    margin: 0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, z-index 0.01s linear;
+    z-index: 1;
+}
+
+.property-card.played:hover {
+    transform: scale(1.4);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    z-index: 50;
+}
+
+/* Adjust property card text for smaller size */
+.property-card.played .property-name {
+    font-size: 8px;
+    top: 3px;
+}
+
+.property-card.played .property-value {
+    font-size: 10px;
+    bottom: 3px;
+    right: 3px;
+}
+
+.property-card.played:hover .property-name {
+    font-size: 11px;
+}
+
+.property-card.played:hover .property-value {
+    font-size: 14px;
+}
+
+/* Card pile styles in left sidebar */
+.left-sidebar .card-pile {
+    width: 100%;
+    aspect-ratio: 2/3;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Payment action button in sidebar */
+.payment-action-button {
+    display: none; /* Hidden by default */
+    width: 100%;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
+}
+
+.payment-action-button .big-button {
+    background-color: #f44336; /* Red color for payment */
+    color: white;
+    animation: pulse-animation 1.5s infinite;
+}
+
+.payment-action-button .big-button:hover {
+    background-color: #d32f2f;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* Conditional display for payment action button */
+.payment-action-button.visible {
+    display: block;
+}
+
+/* Payment bar for inline payment UI */
+.payment-bar {
+    display: none;
+    background-color: rgba(244, 67, 54, 0.1);
+    padding: 8px 12px;
+    border-radius: 5px;
+    margin-left: 10px;
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    position: relative;
+    flex-direction: column;
+    min-width: 180px;
+    max-width: 250px;
+    /* Set fixed height to match money section */
+    height: 90px;
+    max-height: 90px;
+}
+
+.payment-bar.visible {
+    display: flex;
+}
+
+.payment-bar-header {
+    font-size: 14px;
+    font-weight: bold;
+    color: #f44336;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.payment-amount-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+    font-size: 12px;
+}
+
+.payment-current-amount {
+    font-weight: bold;
+    color: #f44336;
+}
+
+.payment-target-amount {
+    color: #333;
+}
+
+/* Progress and button container - fixing horizontal layout */
+.payment-progress-and-button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 5px;
+    width: 100%;
+    flex-direction: row; /* Explicitly set to row */
+    flex-wrap: nowrap; /* Prevent wrapping */
+}
+
+.payment-progress-container {
+    flex: 1;
+    height: 24px;
+    background-color: rgba(255, 255, 255, 0.5);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 0;
+    min-width: 0; /* Allow container to shrink below content size */
+}
+
+.payment-progress-fill {
+    height: 100%;
+    background: linear-gradient(to right, #ffeb3b, #4caf50);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.payment-pay-button {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 40px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 5px;
+}
+
+.payment-pay-button:hover:not(:disabled) {
+    background-color: #d32f2f;
+    transform: scale(1.05);
+}
+
+.payment-pay-button:disabled {
+    background-color: #e57373;
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* Reduce padding above player headers */
+.opponent-area, .player-area {
+    padding: 5px; /* Reduced from 10px */
+    position: relative;
+    padding-top: 25px; /* Reduced from 30px */
+}
+
+.opponent-area h2, .player-area h2 {
+    font-size: 18px;
+    margin-bottom: 8px;
+    margin-top: 0; /* Ensure no top margin */
+    text-align: center;
+    font-weight: bold;
+    padding: 4px; /* Reduced from 5px */
+    border-radius: 4px;
+}
+
+/* Money selection styles */
+.money-denomination-box.selectable {
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.money-denomination-box.selectable:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.money-denomination-box.selected {
+    border: 2px solid #4caf50;
+    box-shadow: 0 0 8px rgba(76, 175, 80, 0.4);
+}
+
+.money-selection-controls {
+    display: none;
+    position: absolute;
+    bottom: -30px;
+    left: 0;
+    right: 0;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    padding: 5px;
+    z-index: 10;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.money-denomination-box.selected .money-selection-controls {
+    display: flex;
+}
+
+.money-selection-btn {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1px solid #ddd;
+    background-color: #f5f5f5;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.money-selection-btn:hover:not(:disabled) {
+    background-color: #e0e0e0;
+}
+
+.money-selection-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.money-selected-count {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Property selection styles */
+.property-card.payment-selectable {
+    cursor: pointer;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.property-card.payment-selectable:hover {
+    transform: translateY(-5px) scale(1.1);
+    z-index: 100;
+}
+
+.property-card.payment-selectable.selected {
+    box-shadow: 0 0 0 3px #4caf50, 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.property-payment-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(76, 175, 80, 0.3);
+    border-radius: 6px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.property-card.payment-selectable.selected .property-payment-overlay {
+    opacity: 1;
+}
+
+.property-card.payment-selectable:hover .property-payment-overlay {
+    opacity: 0.8;
 } 
