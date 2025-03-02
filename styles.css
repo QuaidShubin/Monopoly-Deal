@@ -7,6 +7,21 @@
     padding: 0;
 }
 
+/* CSS variables for property colors */
+:root {
+    --brown-color: #795548;
+    --light-blue-color: #03a9f4;
+    --pink-color: #e91e63;
+    --orange-color: #ff9800;
+    --red-color: #f44336;
+    --yellow-color: #ffeb3b;
+    --green-color: #4caf50;
+    --blue-color: #2196f3;
+    --utility-color: #9e9e9e;
+    --railroad-color: #212121;
+    --any-color: linear-gradient(45deg, #ff9a9e 0%, #fad0c4 25%, #fad0c4 50%, #ffd1ff 75%, #c2e9fb 100%);
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
@@ -1517,7 +1532,7 @@ header h1 {
     display: none;
 }
 
-/* Pulsing animation for payment button */
+/* Payment button pulsing animation */
 @keyframes pulse-animation {
     0% {
         box-shadow: 0 0 0 0 rgba(255, 64, 64, 0.7);
@@ -1531,6 +1546,10 @@ header h1 {
         box-shadow: 0 0 0 0 rgba(255, 64, 64, 0);
         transform: scale(1);
     }
+}
+
+.payment-button {
+    animation: pulse-animation 1.5s infinite;
 }
 
 /* Payment notification badge */
@@ -1715,21 +1734,6 @@ header h1 {
 }
 
 /* Payment button pulsing animation */
-@keyframes pulse-animation {
-    0% {
-        box-shadow: 0 0 0 0 rgba(255, 64, 64, 0.7);
-        transform: scale(1);
-    }
-    50% {
-        box-shadow: 0 0 0 10px rgba(255, 64, 64, 0);
-        transform: scale(1.05);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(255, 64, 64, 0);
-        transform: scale(1);
-    }
-}
-
 .payment-button {
     animation: pulse-animation 1.5s infinite;
 }
@@ -1820,9 +1824,9 @@ header h1 {
 
 /* Player areas */
 .opponent-area, .player-area {
-    padding: 10px;
+    padding: 5px;
     position: relative;
-    padding-top: 30px;
+    padding-top: 20px;
 }
 
 .opponent-area {
@@ -1846,8 +1850,12 @@ header h1 {
 
 .opponent-area h2, .player-area h2, .current-hand-area h2 {
     font-size: 16px;
-    margin-bottom: 8px;
-    color: #333;
+    margin-bottom: 5px;
+    margin-top: 0;
+    text-align: center;
+    font-weight: bold;
+    padding: 3px;
+    border-radius: 4px;
 }
 
 .current-hand-area h2 {
@@ -2107,32 +2115,39 @@ header h1 {
     display: block;
 }
 
-/* Payment bar for inline payment UI */
+/* Payment bar for inline payment UI - completely revised for minimal height */
 .payment-bar {
     display: none;
-    background-color: rgba(244, 67, 54, 0.1);
-    padding: 8px 12px;
-    border-radius: 5px;
+    padding: 0;
     margin-left: 10px;
-    border: 1px solid rgba(244, 67, 54, 0.3);
     position: relative;
-    flex-direction: column;
-    min-width: 180px;
-    max-width: 250px;
-    /* Set fixed height to match money section */
-    height: 90px;
-    max-height: 90px;
+    flex-direction: row;  /* Changed to row to place items side by side */
+    align-items: center;  /* Center items vertically */
+    gap: 8px;
+    height: auto;
+    max-height: 35px;  /* Significantly reduced height */
 }
 
 .payment-bar.visible {
     display: flex;
 }
 
+.payment-info-column {
+    display: flex;
+    flex-direction: column;
+    background-color: rgba(244, 67, 54, 0.1);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    border-radius: 5px;
+    padding: 6px 10px;
+    min-width: 140px;
+    max-width: 180px;
+}
+
 .payment-bar-header {
-    font-size: 14px;
+    font-size: 11px;
     font-weight: bold;
     color: #f44336;
-    margin-bottom: 5px;
+    margin-bottom: 3px;
     text-align: center;
 }
 
@@ -2140,8 +2155,8 @@ header h1 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 5px;
-    font-size: 12px;
+    margin-bottom: 3px;
+    font-size: 10px;
 }
 
 .payment-current-amount {
@@ -2153,25 +2168,16 @@ header h1 {
     color: #333;
 }
 
-/* Progress and button container - fixing horizontal layout */
-.payment-progress-and-button {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 5px;
-    width: 100%;
-    flex-direction: row; /* Explicitly set to row */
-    flex-wrap: nowrap; /* Prevent wrapping */
-}
-
+/* Progress container - a standalone element */
 .payment-progress-container {
-    flex: 1;
+    width: 120px;
     height: 24px;
-    background-color: rgba(255, 255, 255, 0.5);
-    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    border-radius: 12px;
     overflow: hidden;
-    margin-bottom: 0;
-    min-width: 0; /* Allow container to shrink below content size */
+    margin: 0;
+    flex-shrink: 0;
 }
 
 .payment-progress-fill {
@@ -2181,28 +2187,30 @@ header h1 {
     transition: width 0.3s ease;
 }
 
+/* Pay button - a standalone element */
 .payment-pay-button {
     background-color: #f44336;
     color: white;
     border: none;
-    border-radius: 4px;
-    padding: 5px 8px;
+    border-radius: 5px;
+    padding: 0 10px;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.2s ease;
     white-space: nowrap;
-    flex-shrink: 0;
-    min-width: 40px;
     height: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-left: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    flex-shrink: 0;
+    min-width: 40px;
 }
 
 .payment-pay-button:hover:not(:disabled) {
     background-color: #d32f2f;
     transform: scale(1.05);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.3);
 }
 
 .payment-pay-button:disabled {
@@ -2211,20 +2219,20 @@ header h1 {
     cursor: not-allowed;
 }
 
-/* Reduce padding above player headers */
+/* Further reduce padding above player headers */
 .opponent-area, .player-area {
-    padding: 5px; /* Reduced from 10px */
+    padding: 5px;
     position: relative;
-    padding-top: 25px; /* Reduced from 30px */
+    padding-top: 20px;
 }
 
 .opponent-area h2, .player-area h2 {
-    font-size: 18px;
-    margin-bottom: 8px;
-    margin-top: 0; /* Ensure no top margin */
+    font-size: 16px;
+    margin-bottom: 5px;
+    margin-top: 0;
     text-align: center;
     font-weight: bold;
-    padding: 4px; /* Reduced from 5px */
+    padding: 3px;
     border-radius: 4px;
 }
 
@@ -2333,4 +2341,68 @@ header h1 {
 
 .property-card.payment-selectable:hover .property-payment-overlay {
     opacity: 0.8;
+}
+
+/* Property wildcard styles */
+.property-wildcard {
+    position: relative;
+    overflow: hidden;
+}
+
+.property-wildcard-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    background-color: rgba(255, 255, 255, 0.8);
+    color: #333;
+    font-size: 9px;
+    font-weight: bold;
+    padding: 2px 5px;
+    border-radius: 3px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    z-index: 2;
+}
+
+.property-wildcard.property-card .property-name {
+    font-size: 10px;
+    font-weight: bold;
+    z-index: 3;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 3px;
+    padding: 1px 3px;
+}
+
+/* Rent card styles */
+.action-card .action-rent-type {
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+    margin: 3px 0;
+    padding: 2px 4px;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 3px;
+    color: #333;
+}
+
+/* Any color wildcard special styling */
+.property-wildcard[data-colors="any"] {
+    background: var(--any-color);
+}
+
+/* Enhanced styling for property cards when played */
+.property-card.played.property-wildcard .property-name {
+    font-size: 7px;
+}
+
+.property-card.played.property-wildcard .property-wildcard-label {
+    font-size: 7px;
+    padding: 1px 3px;
+}
+
+/* Special styling for wildcard cards in hand */
+.property-wildcard:hover .property-name,
+.property-wildcard:hover .property-wildcard-label {
+    z-index: 10;
 } 

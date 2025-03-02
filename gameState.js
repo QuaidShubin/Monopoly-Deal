@@ -375,13 +375,14 @@ window.MonopolyDeal.showActionCardModal = function(playerNumber, cardIndex) {
       optionsContainer.appendChild(debtCollectorButton);
       break;
       
-    case window.MonopolyDeal.ActionTypes.RENT:
+    case window.MonopolyDeal.ActionTypes.PROPERTY_RENT:
       // Group properties by color to determine valid rent options
       const playerProperties = window.MonopolyDeal.gameState.players[playerNumber].properties;
       let hasValidRentTarget = false;
       
-      Object.keys(playerProperties).forEach(color => {
-        if (playerProperties[color].length > 0) {
+      // Only show options for colors mentioned in the rent card
+      card.colors.forEach(color => {
+        if (playerProperties[color] && playerProperties[color].length > 0) {
           const rentButton = document.createElement('button');
           rentButton.className = 'action-option-btn play-action';
           rentButton.textContent = `Collect rent for ${color} properties`;
@@ -412,6 +413,96 @@ window.MonopolyDeal.showActionCardModal = function(playerNumber, cardIndex) {
       });
       
       if (!hasValidRentTarget) {
+        const noPropertiesMessage = document.createElement('div');
+        noPropertiesMessage.className = 'action-option-message';
+        noPropertiesMessage.textContent = `You have no ${card.colors.join(' or ')} properties to collect rent for`;
+        optionsContainer.appendChild(noPropertiesMessage);
+      }
+      break;
+      
+    case window.MonopolyDeal.ActionTypes.WILD_RENT:
+      // Group properties by color to determine valid rent options for wild rent
+      const playerPropsForWildRent = window.MonopolyDeal.gameState.players[playerNumber].properties;
+      let hasValidWildRentTarget = false;
+      
+      // Show options for all colors the player has
+      Object.keys(playerPropsForWildRent).forEach(color => {
+        if (playerPropsForWildRent[color] && playerPropsForWildRent[color].length > 0) {
+          const rentButton = document.createElement('button');
+          rentButton.className = 'action-option-btn play-action';
+          rentButton.textContent = `Collect rent for ${color} properties`;
+          
+          // Calculate rent value based on property count
+          const rentValue = window.MonopolyDeal.calculateRentForProperties(playerNumber, color);
+          rentButton.textContent += ` ($${rentValue}M)`;
+          
+          // Check if opponent has enough assets to pay
+          const opponentNumber = playerNumber === 1 ? 2 : 1;
+          const opponentTotalValue = window.MonopolyDeal.calculatePlayerAssetValue(opponentNumber);
+          
+          if (opponentTotalValue < rentValue) {
+            rentButton.disabled = true;
+            rentButton.textContent += ' (Opponent cannot pay)';
+          } else {
+            hasValidWildRentTarget = true;
+          }
+          
+          rentButton.addEventListener('click', function() {
+            if (!rentButton.disabled) {
+              window.MonopolyDeal.playRentCard(playerNumber, cardIndex, color, rentValue);
+              window.MonopolyDeal.hideActionCardModal();
+            }
+          });
+          optionsContainer.appendChild(rentButton);
+        }
+      });
+      
+      if (!hasValidWildRentTarget) {
+        const noPropertiesMessage = document.createElement('div');
+        noPropertiesMessage.className = 'action-option-message';
+        noPropertiesMessage.textContent = 'You have no properties to collect rent for';
+        optionsContainer.appendChild(noPropertiesMessage);
+      }
+      break;
+      
+    case window.MonopolyDeal.ActionTypes.RENT:
+      // Legacy rent handling for backwards compatibility
+      // Group properties by color to determine valid rent options
+      const playerPropsLegacy = window.MonopolyDeal.gameState.players[playerNumber].properties;
+      let hasValidRentTargetLegacy = false;
+      
+      Object.keys(playerPropsLegacy).forEach(color => {
+        if (playerPropsLegacy[color].length > 0) {
+          const rentButton = document.createElement('button');
+          rentButton.className = 'action-option-btn play-action';
+          rentButton.textContent = `Collect rent for ${color} properties`;
+          
+          // Calculate rent value based on property count
+          const rentValue = window.MonopolyDeal.calculateRentForProperties(playerNumber, color);
+          rentButton.textContent += ` ($${rentValue}M)`;
+          
+          // Check if opponent has enough assets to pay
+          const opponentNumber = playerNumber === 1 ? 2 : 1;
+          const opponentTotalValue = window.MonopolyDeal.calculatePlayerAssetValue(opponentNumber);
+          
+          if (opponentTotalValue < rentValue) {
+            rentButton.disabled = true;
+            rentButton.textContent += ' (Opponent cannot pay)';
+          } else {
+            hasValidRentTargetLegacy = true;
+          }
+          
+          rentButton.addEventListener('click', function() {
+            if (!rentButton.disabled) {
+              window.MonopolyDeal.playRentCard(playerNumber, cardIndex, color, rentValue);
+              window.MonopolyDeal.hideActionCardModal();
+            }
+          });
+          optionsContainer.appendChild(rentButton);
+        }
+      });
+      
+      if (!hasValidRentTargetLegacy) {
         const noPropertiesMessage = document.createElement('div');
         noPropertiesMessage.className = 'action-option-message';
         noPropertiesMessage.textContent = 'You have no properties to collect rent for';
@@ -1600,18 +1691,80 @@ window.MonopolyDeal.updatePlayerHandUI = function(playerNumber) {
           break;
           
         case 'property':
-          cardElement.className += ` property-card ${card.color}-property`;
-          cardElement.innerHTML = `
-            <div class="property-name">${card.name}</div>
-            <div class="property-value">$${card.value}M</div>`;
+          if (card.wildcard) {
+            // This is a property wildcard - create a special display for it
+            cardElement.className += ` property-card property-wildcard`;
+            
+            // Style based on the primary color
+            cardElement.className += ` ${card.color}-property`;
+            
+            // Add data attribute for colors for CSS targeting
+            cardElement.dataset.colors = card.colors.join('-');
+            
+            // Create the wildcard content
+            let colorDisplay = card.colors[0];
+            if (card.colors.length > 1 && card.colors[0] !== 'any') {
+              // For dual-color wildcards
+              colorDisplay = `${card.colors[0]} & ${card.colors[1]}`;
+            } else if (card.colors[0] === 'any') {
+              // For any-color wildcards
+              colorDisplay = 'ANY COLOR';
+            }
+            
+            cardElement.innerHTML = `
+              <div class="property-name">${card.name}</div>
+              <div class="property-wildcard-label">WILDCARD</div>
+              <div class="property-value">$${card.value}M</div>`;
+            
+            // Add a diagonal divider if it's a dual color card
+            if (card.secondaryColor && card.secondaryColor !== 'any') {
+              cardElement.style.background = `linear-gradient(to bottom right, 
+                                              var(--${card.color}-color) 0%, 
+                                              var(--${card.color}-color) 49%, 
+                                              white 49%, 
+                                              white 51%, 
+                                              var(--${card.secondaryColor}-color) 51%, 
+                                              var(--${card.secondaryColor}-color) 100%)`;
+            } else if (card.colors[0] === 'any') {
+              // For any-color wildcards, use the rainbow gradient from CSS vars
+              cardElement.style.background = 'var(--any-color)';
+            }
+          } else {
+            // Regular property card
+            cardElement.className += ` property-card ${card.color}-property`;
+            cardElement.innerHTML = `
+              <div class="property-name">${card.name}</div>
+              <div class="property-value">$${card.value}M</div>`;
+          }
           break;
           
         case 'action':
           cardElement.className += ' action-card';
-          cardElement.innerHTML = `
-            <div class="action-name">${card.name}</div>
-            <div class="action-description">${card.description}</div>
-            <div class="action-value">$${card.value}M</div>`;
+          
+          // Enhanced display for rent cards
+          if (card.action === window.MonopolyDeal.ActionTypes.PROPERTY_RENT || 
+              card.action === window.MonopolyDeal.ActionTypes.WILD_RENT) {
+            
+            let rentTypeLabel = '';
+            if (card.rentType === window.MonopolyDeal.RentTypes.WILD) {
+              rentTypeLabel = 'ANY COLOR';
+            } else {
+              // Format the rent type to be more readable
+              rentTypeLabel = card.rentType.replace(/-/g, ' & ').replace(/^./, str => str.toUpperCase());
+            }
+            
+            cardElement.innerHTML = `
+              <div class="action-name">${card.name}</div>
+              <div class="action-rent-type">${rentTypeLabel}</div>
+              <div class="action-description">${card.description}</div>
+              <div class="action-value">$${card.value}M</div>`;
+          } else {
+            // Regular action card
+            cardElement.innerHTML = `
+              <div class="action-name">${card.name}</div>
+              <div class="action-description">${card.description}</div>
+              <div class="action-value">$${card.value}M</div>`;
+          }
           break;
       }
       
@@ -1872,11 +2025,15 @@ window.MonopolyDeal.updatePlayerMoneyUI = function(playerNumber) {
     
     const paymentRequest = window.MonopolyDeal.gameState.paymentRequest;
     
+    // Create payment info column container (first element)
+    const infoColumn = document.createElement('div');
+    infoColumn.className = 'payment-info-column';
+    
     // Payment bar header
     const barHeader = document.createElement('div');
     barHeader.className = 'payment-bar-header';
     barHeader.textContent = `Payment to Player ${paymentRequest.toPlayer}`;
-    paymentBar.appendChild(barHeader);
+    infoColumn.appendChild(barHeader);
     
     // Calculate selected total
     const selectedTotal = window.MonopolyDeal.calculateSelectedPaymentTotal();
@@ -1888,6 +2045,7 @@ window.MonopolyDeal.updatePlayerMoneyUI = function(playerNumber) {
     const currentAmount = document.createElement('span');
     currentAmount.className = 'payment-current-amount';
     currentAmount.textContent = `$${selectedTotal}M`;
+    currentAmount.id = 'payment-current-amount';
     
     const targetAmount = document.createElement('span');
     targetAmount.className = 'payment-target-amount';
@@ -1895,18 +2053,18 @@ window.MonopolyDeal.updatePlayerMoneyUI = function(playerNumber) {
     
     amountDisplay.appendChild(currentAmount);
     amountDisplay.appendChild(targetAmount);
-    paymentBar.appendChild(amountDisplay);
+    infoColumn.appendChild(amountDisplay);
     
-    // Create a container for progress bar and button (horizontal layout)
-    const progressAndButtonContainer = document.createElement('div');
-    progressAndButtonContainer.className = 'payment-progress-and-button';
+    // Add info column to payment bar (first direct child)
+    paymentBar.appendChild(infoColumn);
     
-    // Progress bar
+    // Progress bar (second direct child - completely separate from info column)
     const progressContainer = document.createElement('div');
     progressContainer.className = 'payment-progress-container';
     
     const progressFill = document.createElement('div');
     progressFill.className = 'payment-progress-fill';
+    progressFill.id = 'payment-progress-fill';
     const progressPercent = Math.min(100, (selectedTotal / paymentRequest.amount) * 100);
     progressFill.style.width = `${progressPercent}%`;
     
@@ -1915,12 +2073,13 @@ window.MonopolyDeal.updatePlayerMoneyUI = function(playerNumber) {
     }
     
     progressContainer.appendChild(progressFill);
-    progressAndButtonContainer.appendChild(progressContainer);
+    paymentBar.appendChild(progressContainer);
     
-    // Pay button
+    // Pay button (third direct child - completely separate element)
     const payButton = document.createElement('button');
     payButton.className = 'payment-pay-button';
     payButton.textContent = 'PAY';
+    payButton.id = 'payment-pay-button';
     payButton.disabled = selectedTotal < paymentRequest.amount;
     
     payButton.addEventListener('click', function() {
@@ -1929,10 +2088,8 @@ window.MonopolyDeal.updatePlayerMoneyUI = function(playerNumber) {
       }
     });
     
-    progressAndButtonContainer.appendChild(payButton);
-    
-    // Add the progress and button container to the payment bar
-    paymentBar.appendChild(progressAndButtonContainer);
+    // Add pay button directly to payment bar
+    paymentBar.appendChild(payButton);
     
     // Add payment bar to flex container
     flexContainer.appendChild(paymentBar);
@@ -2113,8 +2270,8 @@ window.MonopolyDeal.addToHistory = function(message) {
     
     // Add entries to the DOM
     historyToDisplay.forEach((historyMessage, index) => {
-      const historyItem = document.createElement('div');
-      historyItem.className = 'history-item';
+    const historyItem = document.createElement('div');
+    historyItem.className = 'history-item';
       historyItem.textContent = historyMessage;
       historyContainer.appendChild(historyItem);
     });
