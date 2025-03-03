@@ -19,6 +19,16 @@ window.MonopolyDeal.gameState = {
     money: [],
     properties: []
   },
+  // New properties for Just Say No and action response system
+  actionResponse: {
+    pending: false,
+    type: null,  // 'payment', 'property-steal', etc.
+    fromPlayer: null,
+    toPlayer: null,
+    justSayNoChain: 0,  // How many Just Say No cards have been played in this chain
+    actionCard: null,  // The original action card played
+    payload: null      // Additional data for the action (e.g., amount, property)
+  },
   players: {
     1: { hand: [], money: [], properties: {} },
     2: { hand: [], money: [], properties: {} }
@@ -86,6 +96,16 @@ window.MonopolyDeal.startGame = function() {
         money: [],
         properties: []
       },
+      // New properties for Just Say No and action response system
+      actionResponse: {
+        pending: false,
+        type: null,  // 'payment', 'property-steal', etc.
+        fromPlayer: null,
+        toPlayer: null,
+        justSayNoChain: 0,  // How many Just Say No cards have been played in this chain
+        actionCard: null,  // The original action card played
+        payload: null      // Additional data for the action (e.g., amount, property)
+      },
       players: {
         1: { hand: [], money: [], properties: {} },
         2: { hand: [], money: [], properties: {} }
@@ -129,6 +149,9 @@ window.MonopolyDeal.startGame = function() {
     // Initialize properties UI for both players
     window.MonopolyDeal.updatePlayerPropertiesUI(1);
     window.MonopolyDeal.updatePlayerPropertiesUI(2);
+    
+    // Update actions left counter
+    window.MonopolyDeal.updateActionsLeftCounter();
     
     window.MonopolyDeal.updateGameStatus('Player 1\'s turn. Draw 2 cards to start your turn');
     window.MonopolyDeal.addToHistory('Game started! Each player has been dealt 5 cards.');
@@ -205,8 +228,23 @@ window.MonopolyDeal.drawCardsForTurn = function() {
   }
   
   const playerNumber = window.MonopolyDeal.gameState.currentPlayer;
-  for (let i = 0; i < 2; i++) {
+  const player = window.MonopolyDeal.gameState.players[playerNumber];
+  
+  // Determine how many cards to draw
+  // If player has zero cards, draw 5 cards instead of 2
+  const cardsToDrawCount = player.hand.length === 0 ? 5 : 2;
+  
+  for (let i = 0; i < cardsToDrawCount; i++) {
     window.MonopolyDeal.dealCard(playerNumber);
+  }
+  
+  // Update game status message based on how many cards were drawn
+  if (cardsToDrawCount === 5) {
+    window.MonopolyDeal.updateGameStatus(`Player ${playerNumber} had no cards and drew 5 cards.`);
+    window.MonopolyDeal.addToHistory(`Player ${playerNumber} had no cards and drew 5 cards.`);
+  } else {
+    window.MonopolyDeal.updateGameStatus(`Player ${playerNumber} drew ${cardsToDrawCount} cards.`);
+    window.MonopolyDeal.addToHistory(`Player ${playerNumber} drew ${cardsToDrawCount} cards.`);
   }
   
   window.MonopolyDeal.gameState.hasDrawnCards = true;
@@ -219,10 +257,8 @@ window.MonopolyDeal.drawCardsForTurn = function() {
     window.MonopolyDeal.elements.endTurnButton.disabled = false;
   }
   
-  window.MonopolyDeal.updateGameStatus(`Player ${playerNumber}'s turn. You can play up to 3 cards`);
-  window.MonopolyDeal.addToHistory(`Player ${playerNumber} drew 2 cards`);
-  
-  return true;
+  // Update actions left counter
+  window.MonopolyDeal.updateActionsLeftCounter();
 };
 
 // Play a card from hand
@@ -271,6 +307,22 @@ window.MonopolyDeal.playCard = function(playerNumber, cardId) {
       break;
       
     case 'property':
+      // Check if it's a wildcard property with multiple colors
+      if (card.wildcard && card.colors && card.colors.length > 1) {
+        // For wildcard properties, add additional information to track
+        card.activeColor = card.color; // Track which color is currently active
+        card.isWildcard = true; // Mark this as a wildcard (for easier filtering later)
+        card.originalColors = [...card.colors]; // Store original color options
+        console.log(`Playing wildcard property with colors: ${card.colors.join(', ')}, active color: ${card.activeColor}`);
+      } else if (card.wildcard && card.colors && card.colors[0] === 'any') {
+        // For full wildcard property (any color)
+        card.isWildcard = true;
+        card.originalColors = ['any']; // This is a special case
+        card.color = 'any'; // Start with 'any' as the color
+        card.activeColor = 'any';
+        console.log(`Playing full wildcard property that can be any color`);
+      }
+      
       // Initialize property color group if it doesn't exist
       if (!player.properties[card.color]) {
         player.properties[card.color] = [];
@@ -278,9 +330,6 @@ window.MonopolyDeal.playCard = function(playerNumber, cardId) {
       player.properties[card.color].push(card);
       window.MonopolyDeal.updateGameStatus(`Player ${playerNumber} played ${card.name} property`);
       window.MonopolyDeal.addToHistory(`Player ${playerNumber} played ${card.name} property`);
-      
-      // Check for win condition after playing property
-      window.MonopolyDeal.checkWinCondition(playerNumber);
       break;
       
     default:
@@ -296,6 +345,7 @@ window.MonopolyDeal.playCard = function(playerNumber, cardId) {
   window.MonopolyDeal.updatePlayerHandUI(playerNumber);
   window.MonopolyDeal.updatePlayerMoneyUI(playerNumber);
   window.MonopolyDeal.updatePlayerPropertiesUI(playerNumber);
+  window.MonopolyDeal.updateActionsLeftCounter();
   
   return true;
 };
@@ -311,7 +361,6 @@ window.MonopolyDeal.showActionCardModal = function(playerNumber, cardIndex) {
   const cardNameElement = document.getElementById('modal-card-name');
   const cardPreviewElement = document.getElementById('modal-card-preview');
   const optionsContainer = document.getElementById('action-options-container');
-  const cancelButton = document.getElementById('modal-cancel-btn');
   
   // Set card name
   cardNameElement.textContent = card.name;
@@ -320,16 +369,41 @@ window.MonopolyDeal.showActionCardModal = function(playerNumber, cardIndex) {
   cardPreviewElement.innerHTML = '';
   const cardElement = document.createElement('div');
   cardElement.className = 'card action-card';
-  cardElement.innerHTML = `
-    <div class="action-name">${card.name}</div>
-    <div class="action-description">${card.description}</div>
-    <div class="action-value">$${card.value}M</div>`;
+  
+  // Enhanced display for rent cards
+  if (card.action === window.MonopolyDeal.ActionTypes.PROPERTY_RENT || 
+      card.action === window.MonopolyDeal.ActionTypes.WILD_RENT) {
+    
+    let rentTypeLabel = '';
+    if (card.rentType === window.MonopolyDeal.RentTypes.WILD) {
+      rentTypeLabel = 'ANY COLOR';
+    } else {
+      // Format the rent type to be more readable
+      rentTypeLabel = card.rentType.replace(/-/g, ' & ').replace(/^./, str => str.toUpperCase());
+    }
+    
+    // Add data-rent-type attribute for CSS styling
+    cardElement.dataset.rentType = card.rentType;
+    
+    cardElement.innerHTML = `
+      <div class="action-name">${card.name}</div>
+      <div class="action-rent-type">${rentTypeLabel}</div>
+      <div class="action-description">${card.description}</div>
+      <div class="action-value">$${card.value}M</div>`;
+  } else {
+    // Regular action card
+    cardElement.innerHTML = `
+      <div class="action-name">${card.name}</div>
+      <div class="action-description">${card.description}</div>
+      <div class="action-value">$${card.value}M</div>`;
+  }
+  
   cardPreviewElement.appendChild(cardElement);
   
   // Clear previous options
   optionsContainer.innerHTML = '';
   
-  // Add play as money option
+  // Add play as money option - always available for all action cards
   const playAsMoneyButton = document.createElement('button');
   playAsMoneyButton.className = 'action-option-btn play-money';
   playAsMoneyButton.textContent = `Play as $${card.value}M`;
@@ -357,13 +431,18 @@ window.MonopolyDeal.showActionCardModal = function(playerNumber, cardIndex) {
       debtCollectorButton.className = 'action-option-btn play-action';
       debtCollectorButton.textContent = 'Collect $5M from opponent';
       
-      // Check if opponent has enough assets to pay
+      // Check if opponent has any assets to pay
       const opponentNumber = playerNumber === 1 ? 2 : 1;
       const opponentTotalValue = window.MonopolyDeal.calculatePlayerAssetValue(opponentNumber);
+      const opponentHasAssets = window.MonopolyDeal.hasAnyAvailableAssets(opponentNumber);
       
-      if (opponentTotalValue < 5) {
+      // Only disable if opponent has no assets at all
+      if (!opponentHasAssets) {
         debtCollectorButton.disabled = true;
-        debtCollectorButton.textContent += ' (Opponent cannot pay)';
+        debtCollectorButton.textContent += ' (Opponent has no available assets)';
+      } else if (opponentTotalValue < 5) {
+        // If they can't pay the full amount, show a warning but still allow the action
+        debtCollectorButton.textContent += ' (Insufficient funds - will take all available assets)';
       }
       
       debtCollectorButton.addEventListener('click', function() {
@@ -391,13 +470,19 @@ window.MonopolyDeal.showActionCardModal = function(playerNumber, cardIndex) {
           const rentValue = window.MonopolyDeal.calculateRentForProperties(playerNumber, color);
           rentButton.textContent += ` ($${rentValue}M)`;
           
-          // Check if opponent has enough assets to pay
+          // Check if opponent has any assets to pay
           const opponentNumber = playerNumber === 1 ? 2 : 1;
           const opponentTotalValue = window.MonopolyDeal.calculatePlayerAssetValue(opponentNumber);
+          const opponentHasAssets = window.MonopolyDeal.hasAnyAvailableAssets(opponentNumber);
           
-          if (opponentTotalValue < rentValue) {
+          // Only disable if opponent has no assets at all
+          if (!opponentHasAssets) {
             rentButton.disabled = true;
-            rentButton.textContent += ' (Opponent cannot pay)';
+            rentButton.textContent += ' (Opponent has no available assets)';
+          } else if (opponentTotalValue < rentValue) {
+            // If they can't pay the full amount, show a warning but still allow the action
+            rentButton.textContent += ' (Insufficient funds - will take all available assets)';
+            hasValidRentTarget = true;
           } else {
             hasValidRentTarget = true;
           }
@@ -415,19 +500,23 @@ window.MonopolyDeal.showActionCardModal = function(playerNumber, cardIndex) {
       if (!hasValidRentTarget) {
         const noPropertiesMessage = document.createElement('div');
         noPropertiesMessage.className = 'action-option-message';
-        noPropertiesMessage.textContent = `You have no ${card.colors.join(' or ')} properties to collect rent for`;
+        noPropertiesMessage.textContent = 'You have no matching properties to collect rent for';
         optionsContainer.appendChild(noPropertiesMessage);
+        
+        // Emphasize the play as money option if there are no valid rent targets
+        playAsMoneyButton.style.fontWeight = 'bold';
+        playAsMoneyButton.style.backgroundColor = '#4CAF50';
+        playAsMoneyButton.style.color = 'white';
       }
       break;
       
     case window.MonopolyDeal.ActionTypes.WILD_RENT:
-      // Group properties by color to determine valid rent options for wild rent
+      // For wild rent, we can collect rent for any color property we have
       const playerPropsForWildRent = window.MonopolyDeal.gameState.players[playerNumber].properties;
       let hasValidWildRentTarget = false;
       
-      // Show options for all colors the player has
       Object.keys(playerPropsForWildRent).forEach(color => {
-        if (playerPropsForWildRent[color] && playerPropsForWildRent[color].length > 0) {
+        if (playerPropsForWildRent[color].length > 0) {
           const rentButton = document.createElement('button');
           rentButton.className = 'action-option-btn play-action';
           rentButton.textContent = `Collect rent for ${color} properties`;
@@ -436,13 +525,19 @@ window.MonopolyDeal.showActionCardModal = function(playerNumber, cardIndex) {
           const rentValue = window.MonopolyDeal.calculateRentForProperties(playerNumber, color);
           rentButton.textContent += ` ($${rentValue}M)`;
           
-          // Check if opponent has enough assets to pay
+          // Check if opponent has any assets to pay
           const opponentNumber = playerNumber === 1 ? 2 : 1;
           const opponentTotalValue = window.MonopolyDeal.calculatePlayerAssetValue(opponentNumber);
+          const opponentHasAssets = window.MonopolyDeal.hasAnyAvailableAssets(opponentNumber);
           
-          if (opponentTotalValue < rentValue) {
+          // Only disable if opponent has no assets at all
+          if (!opponentHasAssets) {
             rentButton.disabled = true;
-            rentButton.textContent += ' (Opponent cannot pay)';
+            rentButton.textContent += ' (Opponent has no available assets)';
+          } else if (opponentTotalValue < rentValue) {
+            // If they can't pay the full amount, show a warning but still allow the action
+            rentButton.textContent += ' (Insufficient funds - will take all available assets)';
+            hasValidWildRentTarget = true;
           } else {
             hasValidWildRentTarget = true;
           }
@@ -462,6 +557,11 @@ window.MonopolyDeal.showActionCardModal = function(playerNumber, cardIndex) {
         noPropertiesMessage.className = 'action-option-message';
         noPropertiesMessage.textContent = 'You have no properties to collect rent for';
         optionsContainer.appendChild(noPropertiesMessage);
+        
+        // Emphasize the play as money option if there are no valid rent targets
+        playAsMoneyButton.style.fontWeight = 'bold';
+        playAsMoneyButton.style.backgroundColor = '#4CAF50';
+        playAsMoneyButton.style.color = 'white';
       }
       break;
       
@@ -481,13 +581,19 @@ window.MonopolyDeal.showActionCardModal = function(playerNumber, cardIndex) {
           const rentValue = window.MonopolyDeal.calculateRentForProperties(playerNumber, color);
           rentButton.textContent += ` ($${rentValue}M)`;
           
-          // Check if opponent has enough assets to pay
+          // Check if opponent has any assets to pay
           const opponentNumber = playerNumber === 1 ? 2 : 1;
           const opponentTotalValue = window.MonopolyDeal.calculatePlayerAssetValue(opponentNumber);
+          const opponentHasAssets = window.MonopolyDeal.hasAnyAvailableAssets(opponentNumber);
           
-          if (opponentTotalValue < rentValue) {
+          // Only disable if opponent has no assets at all
+          if (!opponentHasAssets) {
             rentButton.disabled = true;
-            rentButton.textContent += ' (Opponent cannot pay)';
+            rentButton.textContent += ' (Opponent has no available assets)';
+          } else if (opponentTotalValue < rentValue) {
+            // If they can't pay the full amount, show a warning but still allow the action
+            rentButton.textContent += ' (Insufficient funds - will take all available assets)';
+            hasValidRentTargetLegacy = true;
           } else {
             hasValidRentTargetLegacy = true;
           }
@@ -515,13 +621,18 @@ window.MonopolyDeal.showActionCardModal = function(playerNumber, cardIndex) {
       birthdayButton.className = 'action-option-btn play-action';
       birthdayButton.textContent = 'Collect $2M from opponent';
       
-      // Check if opponent has enough assets to pay
+      // Check if opponent has any assets to pay
       const opponentForBirthday = playerNumber === 1 ? 2 : 1;
       const opponentBirthdayValue = window.MonopolyDeal.calculatePlayerAssetValue(opponentForBirthday);
+      const opponentHasBirthdayAssets = window.MonopolyDeal.hasAnyAvailableAssets(opponentForBirthday);
       
-      if (opponentBirthdayValue < 2) {
+      // Only disable if opponent has no assets at all
+      if (!opponentHasBirthdayAssets) {
         birthdayButton.disabled = true;
-        birthdayButton.textContent += ' (Opponent cannot pay)';
+        birthdayButton.textContent += ' (Opponent has no available assets)';
+      } else if (opponentBirthdayValue < 2) {
+        // If they can't pay the full amount, show a warning but still allow the action
+        birthdayButton.textContent += ' (Insufficient funds - will take all available assets)';
       }
       
       birthdayButton.addEventListener('click', function() {
@@ -543,11 +654,6 @@ window.MonopolyDeal.showActionCardModal = function(playerNumber, cardIndex) {
       optionsContainer.appendChild(playActionButton);
       break;
   }
-  
-  // Set up cancel button
-  cancelButton.addEventListener('click', function() {
-    window.MonopolyDeal.hideActionCardModal();
-  });
   
   // Set up close button
   const closeButtons = modal.querySelectorAll('.close-modal');
@@ -638,19 +744,17 @@ window.MonopolyDeal.playDebtCollectorCard = function(playerNumber, cardIndex) {
   
   // Determine opponent
   const opponentNumber = playerNumber === 1 ? 2 : 1;
+  const debtAmount = 5; // Debt Collector always requires $5M
   
-  // Request payment from opponent
-  window.MonopolyDeal.requestPayment(opponentNumber, playerNumber, 5, `Player ${playerNumber} played Debt Collector`);
-  
-  // Update UI
-  window.MonopolyDeal.updateGameStatus(`Player ${playerNumber} played Debt Collector. Player ${opponentNumber} must pay $5M`);
-  window.MonopolyDeal.addToHistory(`Player ${playerNumber} played Debt Collector. Player ${opponentNumber} must pay $5M`);
+  // Request payment from opponent - auto-payment will be handled in requestPayment function
+  window.MonopolyDeal.requestPayment(opponentNumber, playerNumber, debtAmount, `Player ${playerNumber} played Debt Collector`);
   
   // Increment cards played this turn
   window.MonopolyDeal.gameState.cardsPlayedThisTurn++;
   
   // Update UI
   window.MonopolyDeal.updatePlayerHandUI(playerNumber);
+  window.MonopolyDeal.updateActionsLeftCounter();
   
   return true;
 };
@@ -670,18 +774,15 @@ window.MonopolyDeal.playRentCard = function(playerNumber, cardIndex, propertyCol
   // Determine opponent
   const opponentNumber = playerNumber === 1 ? 2 : 1;
   
-  // Request payment from opponent
+  // Request payment from opponent - auto-payment will be handled in requestPayment function
   window.MonopolyDeal.requestPayment(opponentNumber, playerNumber, rentAmount, `Player ${playerNumber} played Rent for ${propertyColor} properties`);
-  
-  // Update UI
-  window.MonopolyDeal.updateGameStatus(`Player ${playerNumber} played Rent for ${propertyColor} properties. Player ${opponentNumber} must pay $${rentAmount}M`);
-  window.MonopolyDeal.addToHistory(`Player ${playerNumber} played Rent for ${propertyColor} properties. Player ${opponentNumber} must pay $${rentAmount}M`);
   
   // Increment cards played this turn
   window.MonopolyDeal.gameState.cardsPlayedThisTurn++;
   
   // Update UI
   window.MonopolyDeal.updatePlayerHandUI(playerNumber);
+  window.MonopolyDeal.updateActionsLeftCounter();
   
   return true;
 };
@@ -700,19 +801,17 @@ window.MonopolyDeal.playBirthdayCard = function(playerNumber, cardIndex) {
   
   // Determine opponent
   const opponentNumber = playerNumber === 1 ? 2 : 1;
+  const birthdayAmount = 2; // Birthday always requires $2M
   
-  // Request payment from opponent
-  window.MonopolyDeal.requestPayment(opponentNumber, playerNumber, 2, `Player ${playerNumber} played Birthday`);
-  
-  // Update UI
-  window.MonopolyDeal.updateGameStatus(`Player ${playerNumber} played Birthday. Player ${opponentNumber} must pay $2M`);
-  window.MonopolyDeal.addToHistory(`Player ${playerNumber} played Birthday. Player ${opponentNumber} must pay $2M`);
+  // Request payment from opponent - auto-payment will be handled in requestPayment function
+  window.MonopolyDeal.requestPayment(opponentNumber, playerNumber, birthdayAmount, `Player ${playerNumber} played Birthday`);
   
   // Increment cards played this turn
   window.MonopolyDeal.gameState.cardsPlayedThisTurn++;
   
   // Update UI
   window.MonopolyDeal.updatePlayerHandUI(playerNumber);
+  window.MonopolyDeal.updateActionsLeftCounter();
   
   return true;
 };
@@ -739,39 +838,57 @@ window.MonopolyDeal.calculatePlayerAssetValue = function(playerNumber) {
   return totalValue;
 };
 
-// Request a payment from one player to another
+// Request payment from a player
 window.MonopolyDeal.requestPayment = function(fromPlayer, toPlayer, amount, reason = '') {
-  console.log(`Requesting payment of $${amount}M from Player ${fromPlayer} to Player ${toPlayer} for ${reason}`);
+  console.log(`Requesting payment of $${amount}M from Player ${fromPlayer} to Player ${toPlayer}`);
   
-  // Set the payment pending state to lock the game until payment is complete
-  window.MonopolyDeal.gameState.paymentPending = true;
+  if (!window.MonopolyDeal.gameState.gameStarted) {
+    console.warn('Game not started');
+    return false;
+  }
   
-  // Store the payment request details in the game state
+  // Set up payment request
   window.MonopolyDeal.gameState.paymentRequest = {
-    fromPlayer,
-    toPlayer,
-    amount,
-    reason
+    fromPlayer: fromPlayer,
+    toPlayer: toPlayer,
+    amount: amount,
+    reason: reason
   };
   
-  // Clear any previously selected payment assets
+  window.MonopolyDeal.gameState.paymentPending = true;
+  window.MonopolyDeal.gameState.paymentMode = false;
+  
+  // Reset selected payment assets
   window.MonopolyDeal.gameState.selectedPaymentAssets = {
     money: [],
     properties: []
   };
   
-  // REMOVED: No longer automatically switch to paying player's perspective
-  // We'll keep the current perspective and show payment UI only when in the paying player's perspective
+  // Set up the action response system for Just Say No
+  window.MonopolyDeal.gameState.actionResponse = {
+    pending: true,
+    type: 'payment',
+    fromPlayer: fromPlayer,  // Player who will pay (target of the action)
+    toPlayer: toPlayer,      // Player who will receive (initiator of the action)
+    justSayNoChain: 0,
+    actionCard: window.MonopolyDeal.gameState.lastActionCard,
+    payload: { amount: amount, reason: reason }
+  };
   
-  // Update the game status message and history
-  window.MonopolyDeal.updateGameStatus(`Player ${fromPlayer} needs to pay $${amount}M to Player ${toPlayer} for ${reason}.`);
-  window.MonopolyDeal.addToHistory(`Player ${fromPlayer} must pay $${amount}M to Player ${toPlayer} for ${reason}`);
+  // Update the game status for everyone
+  window.MonopolyDeal.updateGameStatus(`Waiting for Player ${fromPlayer} to respond to payment request of $${amount}M to Player ${toPlayer}`);
+  window.MonopolyDeal.addToHistory(`Player ${toPlayer} requested $${amount}M from Player ${fromPlayer}`);
   
-  // Update button states to reflect payment pending
-  window.MonopolyDeal.updateButtonStates();
+  // Switch to the perspective of the player who needs to respond
+  window.MonopolyDeal.currentPerspective = fromPlayer;
   
-  // Show payment notification in a simplified way
-  window.MonopolyDeal.showTemporaryMessage(`Payment Request: Player ${fromPlayer} must pay $${amount}M to Player ${toPlayer}`, 4000);
+  // Update UI
+  window.MonopolyDeal.updateAllPlayerUIs();
+  
+  // Show response options when in target player's perspective
+  window.MonopolyDeal.showActionResponseOptions();
+  
+  return true;
 };
 
 // Show the payment modal with all selectable assets
@@ -779,12 +896,51 @@ window.MonopolyDeal.showPaymentModal = function() {
   console.log('Showing payment modal...');
   
   const paymentRequest = window.MonopolyDeal.gameState.paymentRequest;
-  
   if (!paymentRequest) {
     console.error('No payment request found!');
     return;
   }
-  
+
+  // Calculate total available assets
+  const availableAssets = window.MonopolyDeal.calculateAvailableAssets(paymentRequest.fromPlayer);
+  console.log(`Total available assets: $${availableAssets}M, Required amount: $${paymentRequest.amount}M`);
+
+  // If available assets are less than or equal to required amount, automatically transfer all
+  if (availableAssets <= paymentRequest.amount) {
+    console.log('Available assets less than or equal to required amount - automatically transferring all assets');
+    window.MonopolyDeal.takeAllAvailableAssets(paymentRequest.fromPlayer, paymentRequest.toPlayer);
+    
+    // Show message to user
+    window.MonopolyDeal.showTemporaryMessage(`Automatically transferred all available assets ($${availableAssets}M) as payment`, 3000);
+    
+    // Update game status
+    if (availableAssets < paymentRequest.amount) {
+      window.MonopolyDeal.updateGameStatus(`Player ${paymentRequest.fromPlayer} made a partial payment of $${availableAssets}M to Player ${paymentRequest.toPlayer} (all available assets)`);
+      window.MonopolyDeal.addToHistory(`Player ${paymentRequest.fromPlayer} made a partial payment of $${availableAssets}M (all available assets)`);
+    } else {
+      window.MonopolyDeal.updateGameStatus(`Player ${paymentRequest.fromPlayer} paid $${availableAssets}M to Player ${paymentRequest.toPlayer}`);
+      window.MonopolyDeal.addToHistory(`Player ${paymentRequest.fromPlayer} paid $${availableAssets}M`);
+    }
+    
+    // Reset payment state
+    window.MonopolyDeal.gameState.paymentPending = false;
+    window.MonopolyDeal.gameState.paymentMode = false;
+    window.MonopolyDeal.gameState.paymentRequest = null;
+    window.MonopolyDeal.gameState.selectedPaymentAssets = {
+      money: [],
+      properties: []
+    };
+    
+    // Return to the perspective of the player whose turn it is
+    const currentPlayer = window.MonopolyDeal.gameState.currentPlayer;
+    if (window.MonopolyDeal.currentPerspective !== currentPlayer) {
+      window.MonopolyDeal.currentPerspective = currentPlayer;
+      window.MonopolyDeal.updateAllPlayerUIs();
+    }
+    
+    return;
+  }
+
   // Enable payment mode when the modal is shown
   window.MonopolyDeal.gameState.paymentMode = true;
   
@@ -800,12 +956,6 @@ window.MonopolyDeal.showPaymentModal = function() {
     return;
   }
   
-  // Set up the payment modal content
-  document.getElementById('payment-amount').textContent = paymentRequest.amount;
-  document.getElementById('payment-selected-amount').textContent = '0';
-  document.getElementById('payment-required-amount').textContent = paymentRequest.amount;
-  document.getElementById('payment-reason').textContent = paymentRequest.reason || '';
-  
   // Reset progress bar
   const progressBar = document.getElementById('payment-progress-bar');
   if (progressBar) {
@@ -813,19 +963,16 @@ window.MonopolyDeal.showPaymentModal = function() {
     progressBar.classList.remove('sufficient');
   }
   
-  // Set up modal close button
+  // Set up modal close button - prevent closing until payment is complete
   const closeButton = paymentModal.querySelector('.close');
   if (closeButton) {
     // Remove existing listeners by replacing the element
     const newCloseButton = closeButton.cloneNode(true);
     closeButton.parentNode.replaceChild(newCloseButton, closeButton);
     
-    // Add new listener
+    // Add new listener that prevents closing
     newCloseButton.addEventListener('click', function() {
-      paymentModal.style.display = 'none';
-      // Note: We don't allow canceling the payment through this, it just hides the modal
-      // The payment is still required
-      window.MonopolyDeal.showTemporaryMessage('Payment is still required. Click the PAY button when ready.', 3000);
+      window.MonopolyDeal.showTemporaryMessage('You must complete the payment before closing this window.', 3000);
     });
   }
   
@@ -834,6 +981,7 @@ window.MonopolyDeal.showPaymentModal = function() {
   if (confirmButton) {
     // Reset button state
     confirmButton.disabled = true;
+    confirmButton.textContent = 'Pay';
     
     // Replace to remove existing listeners
     const newConfirmButton = confirmButton.cloneNode(true);
@@ -845,29 +993,23 @@ window.MonopolyDeal.showPaymentModal = function() {
     });
   }
   
-  // Set up cancel button
-  const cancelButton = document.getElementById('payment-cancel-btn');
-  if (cancelButton) {
-    // Replace to remove existing listeners
-    const newCancelButton = cancelButton.cloneNode(true);
-    cancelButton.parentNode.replaceChild(newCancelButton, cancelButton);
-    
-    // Add new listener
-    newCancelButton.addEventListener('click', function() {
-      paymentModal.style.display = 'none';
-      // Just hide the modal, payment is still required
-      window.MonopolyDeal.showTemporaryMessage('Payment is still required. Click the PAY button when ready.', 3000);
-    });
-  }
-  
   // Clear and populate payment containers
   window.MonopolyDeal.populatePaymentSelectionContainers();
   
   // Display the modal
   paymentModal.style.display = 'flex';
   
-  // Ensure button state is correct (disabled until sufficient payment selected)
-  window.MonopolyDeal.updatePaymentButtonState();
+  // Add ESC key prevention
+  const escKeyHandler = function(e) {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      window.MonopolyDeal.showTemporaryMessage('You must complete the payment before closing this window.', 3000);
+    }
+  };
+  document.addEventListener('keydown', escKeyHandler);
+  
+  // Store the handler for removal when payment is complete
+  window.MonopolyDeal.gameState.escKeyHandler = escKeyHandler;
 };
 
 // Populate the payment containers with selectable assets
@@ -974,7 +1116,7 @@ window.MonopolyDeal.populatePaymentSelectionContainers = function() {
       incrementButton.textContent = '+';
       incrementButton.disabled = denominationGroups[value].selectedCount === denominationGroups[value].count;
       incrementButton.addEventListener('click', function() {
-        // Find first unselected card of this denomination
+        // Find first unselected card of this denomination and select it
         for (let i = 0; i < denominationGroups[value].cards.length; i++) {
           const cardInfo = denominationGroups[value].cards[i];
           if (!cardInfo.selected) {
@@ -1020,7 +1162,27 @@ window.MonopolyDeal.populatePaymentSelectionContainers = function() {
     for (let i = 0; i < properties.length; i++) {
       const property = properties[i];
       
-      // Create property card
+      // Skip 10-way wildcard properties (they cannot be given as payment)
+      if (property.wildcard && property.originalColors && 
+          (property.originalColors.includes('any') || property.originalColors[0] === 'any')) {
+        // Create property card with special styling
+        const cardElement = document.createElement('div');
+        cardElement.className = `card property-card ${color}-property protected-wildcard`;
+        cardElement.innerHTML = `
+          <div class="property-name">${property.name}</div>
+          <div class="property-value">$${property.value}M</div>
+          <div class="property-protected-overlay">Protected</div>`;
+        cardElement.dataset.color = color;
+        cardElement.dataset.index = i;
+        
+        // Add a tooltip or informational hover effect
+        cardElement.title = "This full wildcard property cannot be given as payment";
+        
+        propertiesContainer.appendChild(cardElement);
+        continue; // Skip to the next property
+      }
+      
+      // Create normal property card
       const cardElement = document.createElement('div');
       cardElement.className = `card property-card ${color}-property payment-selectable`;
       cardElement.innerHTML = `
@@ -1028,6 +1190,17 @@ window.MonopolyDeal.populatePaymentSelectionContainers = function() {
         <div class="property-value">$${property.value}M</div>`;
       cardElement.dataset.color = color;
       cardElement.dataset.index = i;
+      
+      // Add wildcard data attribute if it's a wildcard
+      if (property.wildcard && property.originalColors) {
+        cardElement.classList.add('property-wildcard');
+        cardElement.dataset.colors = property.originalColors.join('-');
+        
+        // For any-color wildcards, use special data attribute
+        if (property.originalColors.includes('any') || property.originalColors[0] === 'any') {
+          cardElement.dataset.colors = 'any';
+        }
+      }
       
       // Check if this property is already selected
       const isSelected = window.MonopolyDeal.gameState.selectedPaymentAssets.properties.some(
@@ -1076,17 +1249,8 @@ window.MonopolyDeal.processSelectedPayment = function() {
   const selectedTotal = window.MonopolyDeal.calculateSelectedPaymentTotal();
   console.log(`Selected payment total: $${selectedTotal}M of $${paymentRequest.amount}M required`);
   
-  // Check if payment is sufficient
-  if (selectedTotal < paymentRequest.amount) {
-    // Payment is insufficient, but we'll still allow it with a warning
-    window.MonopolyDeal.showTemporaryMessage(
-      `Warning: Payment is $${paymentRequest.amount - selectedTotal}M short!`,
-      3000
-    );
-    window.MonopolyDeal.addToHistory(`Player ${paymentRequest.fromPlayer} made a partial payment of $${selectedTotal}M to Player ${paymentRequest.toPlayer}`);
-  } else {
-    window.MonopolyDeal.addToHistory(`Player ${paymentRequest.fromPlayer} paid $${selectedTotal}M to Player ${paymentRequest.toPlayer}`);
-  }
+  // Transfer selected assets (even if insufficient)
+  console.log(`Transferring ${window.MonopolyDeal.gameState.selectedPaymentAssets.money.length} money cards and ${window.MonopolyDeal.gameState.selectedPaymentAssets.properties.length} property cards`);
   
   // Sort indices in descending order so we remove from back to front
   const moneyIndices = [...window.MonopolyDeal.gameState.selectedPaymentAssets.money].sort((a, b) => b - a);
@@ -1144,6 +1308,12 @@ window.MonopolyDeal.processSelectedPayment = function() {
     });
   }
   
+  // Remove ESC key handler
+  if (window.MonopolyDeal.gameState.escKeyHandler) {
+    document.removeEventListener('keydown', window.MonopolyDeal.gameState.escKeyHandler);
+    window.MonopolyDeal.gameState.escKeyHandler = null;
+  }
+  
   // Close payment modal
   const paymentModal = document.getElementById('payment-modal');
   if (paymentModal) {
@@ -1171,24 +1341,26 @@ window.MonopolyDeal.processSelectedPayment = function() {
   window.MonopolyDeal.updatePlayerMoneyUI(paymentRequest.toPlayer);
   window.MonopolyDeal.updatePlayerPropertiesUI(paymentRequest.toPlayer);
   
-  // Update game status
-  window.MonopolyDeal.updateGameStatus(`Payment of $${selectedTotal}M completed from Player ${paymentRequest.fromPlayer} to Player ${paymentRequest.toPlayer}`);
-  
-  // Re-enable all buttons and return to original player's perspective
-  window.MonopolyDeal.updateButtonStates();
+  // Update game status based on payment amount
+  if (selectedTotal < paymentRequest.amount) {
+    window.MonopolyDeal.updateGameStatus(`Player ${paymentRequest.fromPlayer} made a partial payment of $${selectedTotal}M to Player ${paymentRequest.toPlayer} (short by $${paymentRequest.amount - selectedTotal}M)`);
+    window.MonopolyDeal.addToHistory(`Player ${paymentRequest.fromPlayer} made a partial payment of $${selectedTotal}M to Player ${paymentRequest.toPlayer}`);
+  } else {
+    window.MonopolyDeal.updateGameStatus(`Payment of $${selectedTotal}M completed from Player ${paymentRequest.fromPlayer} to Player ${paymentRequest.toPlayer}`);
+    window.MonopolyDeal.addToHistory(`Player ${paymentRequest.fromPlayer} paid $${selectedTotal}M to Player ${paymentRequest.toPlayer}`);
+  }
   
   // Show success notification
-  window.MonopolyDeal.showTemporaryMessage('Payment successful!', 2000);
+  window.MonopolyDeal.showTemporaryMessage('Payment processed!', 2000);
   
   // Return to the perspective of the player whose turn it is
   const currentPlayer = window.MonopolyDeal.gameState.currentPlayer;
   if (window.MonopolyDeal.currentPerspective !== currentPlayer) {
-    setTimeout(() => {
-      window.MonopolyDeal.currentPerspective = currentPlayer;
-      window.MonopolyDeal.updateAllPlayerUIs();
-      window.MonopolyDeal.addToHistory(`Returned to Player ${currentPlayer}'s perspective after payment`);
-    }, 1000);
+    window.MonopolyDeal.currentPerspective = currentPlayer;
+    window.MonopolyDeal.updateAllPlayerUIs();
   }
+  
+  return true;
 };
 
 // Toggle selection of an asset for payment
@@ -1300,11 +1472,18 @@ window.MonopolyDeal.updatePaymentUI = function() {
   
   // Get selected total
   const selectedTotal = window.MonopolyDeal.calculateSelectedPaymentTotal();
+  const hasFullAmount = selectedTotal >= paymentRequest.amount;
   
-  // Update selected amount display
-  const selectedAmountElement = document.getElementById('payment-selected-amount');
-  if (selectedAmountElement) {
-    selectedAmountElement.textContent = selectedTotal;
+  // Update current amount
+  const currentAmountElement = document.getElementById('payment-current-amount');
+  if (currentAmountElement) {
+    currentAmountElement.textContent = selectedTotal;
+  }
+  
+  // Update required amount
+  const requiredAmountElement = document.getElementById('payment-required-amount');
+  if (requiredAmountElement) {
+    requiredAmountElement.textContent = paymentRequest.amount;
   }
   
   // Update progress bar
@@ -1313,24 +1492,22 @@ window.MonopolyDeal.updatePaymentUI = function() {
     const progressPercentage = Math.min(100, (selectedTotal / paymentRequest.amount) * 100);
     progressBar.style.width = `${progressPercentage}%`;
     
-    if (selectedTotal >= paymentRequest.amount) {
+    if (hasFullAmount) {
       progressBar.classList.add('sufficient');
     } else {
       progressBar.classList.remove('sufficient');
     }
   }
   
-  // Update confirm button state
+  // Update confirm button state - only enable when full amount is selected
   const confirmButton = document.getElementById('payment-confirm-btn');
   if (confirmButton) {
-    confirmButton.disabled = selectedTotal < paymentRequest.amount;
+    confirmButton.disabled = !hasFullAmount;
+    confirmButton.textContent = hasFullAmount ? 'Pay' : `Select $${paymentRequest.amount}M`;
   }
   
   // Repopulate payment selection containers if needed
   window.MonopolyDeal.populatePaymentSelectionContainers();
-  
-  // Update button state for paying in the player money section
-  window.MonopolyDeal.updatePaymentButtonState();
 };
 
 // Update the payment confirm button state based on selected total
@@ -1340,26 +1517,41 @@ window.MonopolyDeal.updatePaymentButtonState = function() {
   
   // Calculate selected total
   const selectedTotal = window.MonopolyDeal.calculateSelectedPaymentTotal();
+  const hasSelection = selectedTotal > 0;
   
-  // Find the payment button
-  const payingPlayer = paymentRequest.fromPlayer;
-  const moneyElement = document.getElementById(payingPlayer === 1 ? 'opponent-money' : 'player-money');
-  if (!moneyElement) return;
+  // Update payment status display
+  document.getElementById('payment-selected-amount').textContent = selectedTotal;
+  document.getElementById('payment-required-amount').textContent = paymentRequest.amount;
   
-  const paymentButton = moneyElement.querySelector('.payment-button');
-  if (!paymentButton) return;
+  // Update progress bar
+  const progressBar = document.getElementById('payment-progress-bar');
+  if (progressBar) {
+    const percentage = Math.min(100, (selectedTotal / paymentRequest.amount) * 100);
+    progressBar.style.width = `${percentage}%`;
+    
+    if (selectedTotal >= paymentRequest.amount) {
+      progressBar.classList.add('sufficient');
+    } else {
+      progressBar.classList.remove('sufficient');
+    }
+  }
   
-  // Update button state
-  if (selectedTotal >= paymentRequest.amount) {
-    paymentButton.disabled = false;
-    paymentButton.title = `Pay $${selectedTotal}M to Player ${paymentRequest.toPlayer}`;
-    paymentButton.style.opacity = '1';
-    paymentButton.style.cursor = 'pointer';
-  } else {
-    paymentButton.disabled = true;
-    paymentButton.title = `Need to select $${paymentRequest.amount}M, currently selected: $${selectedTotal}M`;
-    paymentButton.style.opacity = '0.7';
-    paymentButton.style.cursor = 'not-allowed';
+  // Find confirm button in the payment modal
+  const confirmButton = document.getElementById('payment-confirm-btn');
+  if (confirmButton) {
+    // Allow payment if any assets are selected, not just if full amount is selected
+    if (hasSelection) {
+      confirmButton.disabled = false;
+      
+      if (selectedTotal >= paymentRequest.amount) {
+        confirmButton.textContent = `Send Full Payment ($${selectedTotal}M)`;
+      } else {
+        confirmButton.textContent = `Send Partial Payment ($${selectedTotal}M of $${paymentRequest.amount}M)`;
+      }
+    } else {
+      confirmButton.disabled = true;
+      confirmButton.textContent = 'Select Assets to Pay';
+    }
   }
 };
 
@@ -1519,6 +1711,9 @@ window.MonopolyDeal.endTurn = function() {
   window.MonopolyDeal.gameState.discardMode = false;
   window.MonopolyDeal.gameState.cardsToDiscard = 0;
   
+  // Update actions left counter
+  window.MonopolyDeal.updateActionsLeftCounter();
+  
   // Update UI
   if (window.MonopolyDeal.elements.drawButton) {
     window.MonopolyDeal.elements.drawButton.disabled = false;
@@ -1576,7 +1771,7 @@ window.MonopolyDeal.discardCard = function(playerNumber, cardId) {
   if (window.MonopolyDeal.gameState.cardsToDiscard > 0) {
     window.MonopolyDeal.updateGameStatus(`Discarded ${card.type} card. ${window.MonopolyDeal.gameState.cardsToDiscard} more to discard.`);
   } else {
-    window.MonopolyDeal.updateGameStatus('All cards discarded. Ending turn...');
+    window.MonopolyDeal.updateGameStatus(`Discarded final card. Turn ended.`);
   }
   
   window.MonopolyDeal.addToHistory(`Player ${playerNumber} discarded a ${card.type} card`);
@@ -1585,11 +1780,17 @@ window.MonopolyDeal.discardCard = function(playerNumber, cardId) {
   if (window.MonopolyDeal.gameState.cardsToDiscard === 0) {
     window.MonopolyDeal.gameState.discardMode = false;
     
-    // Add a small delay before ending the turn
-    setTimeout(() => {
-      // End the turn now that we've discarded enough
-      window.MonopolyDeal.endTurn();
-    }, 1500);
+    // Clear the discard message first with an empty update
+    window.MonopolyDeal.updateGameStatus('');
+    
+    // Remove the discard notification banner
+    const discardInfo = document.querySelector('.discard-info');
+    if (discardInfo) {
+      discardInfo.remove();
+    }
+    
+    // End the turn immediately without delay
+    window.MonopolyDeal.endTurn();
   }
 };
 
@@ -1672,6 +1873,12 @@ window.MonopolyDeal.updatePlayerHandUI = function(playerNumber) {
   const hand = window.MonopolyDeal.gameState.players[playerNumber].hand;
   hiddenHandElement.innerHTML = '';
   
+  // Update card counter
+  const cardCounterElement = document.getElementById(playerNumber === 1 ? 'opponent-card-counter' : 'player-card-counter');
+  if (cardCounterElement) {
+    cardCounterElement.textContent = `(${hand.length} card${hand.length !== 1 ? 's' : ''})`;
+  }
+  
   // Only show cards in currentPlayerHand if this player's perspective is active
   if (playerNumber === window.MonopolyDeal.currentPerspective) {
     currentPerspectiveHandElement.innerHTML = '';
@@ -1682,90 +1889,20 @@ window.MonopolyDeal.updatePlayerHandUI = function(playerNumber) {
       cardElement.className = 'card';
       cardElement.dataset.cardId = card.id;
       
+      const imagePath = window.MonopolyDeal.getCardImagePath(card);
+      
       // Style based on card type
-      switch (card.type) {
-        case 'money':
-          cardElement.className += ' money-card';
-          cardElement.style.backgroundColor = window.MonopolyDeal.getMoneyColor(card.value);
-          cardElement.innerHTML = `<div class="card-value">$${card.value}M</div>`;
-          break;
-          
-        case 'property':
-          if (card.wildcard) {
-            // This is a property wildcard - create a special display for it
-            cardElement.className += ` property-card property-wildcard`;
-            
-            // Style based on the primary color
-            cardElement.className += ` ${card.color}-property`;
-            
-            // Add data attribute for colors for CSS targeting
-            cardElement.dataset.colors = card.colors.join('-');
-            
-            // Create the wildcard content
-            let colorDisplay = card.colors[0];
-            if (card.colors.length > 1 && card.colors[0] !== 'any') {
-              // For dual-color wildcards
-              colorDisplay = `${card.colors[0]} & ${card.colors[1]}`;
-            } else if (card.colors[0] === 'any') {
-              // For any-color wildcards
-              colorDisplay = 'ANY COLOR';
-            }
-            
-            cardElement.innerHTML = `
-              <div class="property-name">${card.name}</div>
-              <div class="property-wildcard-label">WILDCARD</div>
-              <div class="property-value">$${card.value}M</div>`;
-            
-            // Add a diagonal divider if it's a dual color card
-            if (card.secondaryColor && card.secondaryColor !== 'any') {
-              cardElement.style.background = `linear-gradient(to bottom right, 
-                                              var(--${card.color}-color) 0%, 
-                                              var(--${card.color}-color) 49%, 
-                                              white 49%, 
-                                              white 51%, 
-                                              var(--${card.secondaryColor}-color) 51%, 
-                                              var(--${card.secondaryColor}-color) 100%)`;
-            } else if (card.colors[0] === 'any') {
-              // For any-color wildcards, use the rainbow gradient from CSS vars
-              cardElement.style.background = 'var(--any-color)';
-            }
-          } else {
-            // Regular property card
-            cardElement.className += ` property-card ${card.color}-property`;
-            cardElement.innerHTML = `
-              <div class="property-name">${card.name}</div>
-              <div class="property-value">$${card.value}M</div>`;
-          }
-          break;
-          
-        case 'action':
-          cardElement.className += ' action-card';
-          
-          // Enhanced display for rent cards
-          if (card.action === window.MonopolyDeal.ActionTypes.PROPERTY_RENT || 
-              card.action === window.MonopolyDeal.ActionTypes.WILD_RENT) {
-            
-            let rentTypeLabel = '';
-            if (card.rentType === window.MonopolyDeal.RentTypes.WILD) {
-              rentTypeLabel = 'ANY COLOR';
-            } else {
-              // Format the rent type to be more readable
-              rentTypeLabel = card.rentType.replace(/-/g, ' & ').replace(/^./, str => str.toUpperCase());
-            }
-            
-            cardElement.innerHTML = `
-              <div class="action-name">${card.name}</div>
-              <div class="action-rent-type">${rentTypeLabel}</div>
-              <div class="action-description">${card.description}</div>
-              <div class="action-value">$${card.value}M</div>`;
-          } else {
-            // Regular action card
-            cardElement.innerHTML = `
-              <div class="action-name">${card.name}</div>
-              <div class="action-description">${card.description}</div>
-              <div class="action-value">$${card.value}M</div>`;
-          }
-          break;
+      if (imagePath) {
+        // Use card image
+        cardElement.style.backgroundImage = `url('${imagePath}')`;
+        cardElement.style.backgroundSize = 'cover';
+        cardElement.style.backgroundPosition = 'center';
+        cardElement.style.backgroundRepeat = 'no-repeat';
+      } else if (card.type === 'money') {
+        // Fallback for money cards
+        cardElement.className += ' money-card';
+        cardElement.style.backgroundColor = window.MonopolyDeal.getMoneyColor(card.value);
+        cardElement.innerHTML = `<div class="card-value">$${card.value}M</div>`;
       }
       
       // Handle card click events based on game state
@@ -2118,117 +2255,112 @@ window.MonopolyDeal.updatePlayerMoneyUI = function(playerNumber) {
   return true;
 };
 
+// Required properties for a complete set
+const REQUIRED_PROPERTIES = {
+  'brown': 2,
+  'blue': 2,
+  'green': 3,
+  'red': 3,
+  'yellow': 3,
+  'orange': 3,
+  'pink': 3,
+  'light-blue': 3,
+  'utility': 2,
+  'railroad': 4
+};
+
 window.MonopolyDeal.updatePlayerPropertiesUI = function(playerNumber) {
   console.log(`Updating properties UI for player ${playerNumber}...`);
   
-  // Fixed positions: Player 1 always top, Player 2 always bottom
-  let propertiesElement;
-  
-  if (playerNumber === 1) {
-    // Player 1 is always in opponent area (top)
-    propertiesElement = document.getElementById('opponent-properties');
-    console.log(`Using opponent-properties element for Player 1 (top)`);
-  } else {
-    // Player 2 is always in player area (bottom)
-    propertiesElement = document.getElementById('player-properties');
-    console.log(`Using player-properties element for Player 2 (bottom)`);
-  }
+  const propertiesElement = playerNumber === 1 ? 
+    document.getElementById('opponent-properties') : 
+    document.getElementById('player-properties');
   
   if (!propertiesElement) {
     console.error(`Properties element for player ${playerNumber} not found`);
     return false;
   }
   
-  const properties = window.MonopolyDeal.gameState.players[playerNumber].properties;
+  const playerProperties = window.MonopolyDeal.gameState.players[playerNumber].properties;
   propertiesElement.innerHTML = '';
   
-  // Check if this player is the one who needs to pay
-  const isPaymentPending = window.MonopolyDeal.gameState.paymentPending && 
-                           window.MonopolyDeal.gameState.paymentRequest && 
-                           window.MonopolyDeal.gameState.paymentRequest.fromPlayer === playerNumber;
-  
-  // Whether this player's perspective is active and they're supposed to pay
-  const isPaymentPlayerPerspective = isPaymentPending && 
-                                     playerNumber === window.MonopolyDeal.currentPerspective;
-  
-  // Add perspective indicator if this is the current perspective
-  if (playerNumber === window.MonopolyDeal.currentPerspective) {
-    const perspectiveIndicator = document.createElement('div');
-    perspectiveIndicator.className = 'perspective-indicator active';
-    perspectiveIndicator.textContent = `YOUR VIEW`;
-    propertiesElement.appendChild(perspectiveIndicator);
-  }
-  
-  // For each property color group, create a container
-  Object.entries(properties).forEach(([color, cards]) => {
-    const colorGroupElement = document.createElement('div');
-    // Add both the property-group class and the color-specific class
-    colorGroupElement.className = `property-group ${color}-group`;
+  // Create property groups for each color
+  Object.keys(playerProperties).forEach(color => {
+    const properties = playerProperties[color];
+    if (properties.length === 0) return;
     
-    // Add header for the color group
-    const headerElement = document.createElement('div');
-    headerElement.className = 'property-group-header';
-    headerElement.textContent = `${color.charAt(0).toUpperCase() + color.slice(1)}`;
-    colorGroupElement.appendChild(headerElement);
+    const groupElement = document.createElement('div');
+    groupElement.className = `property-group ${color}-group`;
     
-    // Create two row containers for the cards
-    const topRowElement = document.createElement('div');
-    topRowElement.className = 'property-row top-row';
+    // Check if this color group forms a monopoly
+    const requiredCount = REQUIRED_PROPERTIES[color] || 3; // Default to 3 if not specified
+    let effectiveCount = 0;
     
-    const bottomRowElement = document.createElement('div');
-    bottomRowElement.className = 'property-row bottom-row';
-    
-    // Add cards to rows (divide cards between the two rows)
-    cards.forEach((card, index) => {
-      const cardElement = document.createElement('div');
-      cardElement.className = `card property-card ${color}-property played`;
-      
-      // Add payment selection functionality for properties
-      if (isPaymentPlayerPerspective) {
-        cardElement.classList.add('payment-selectable');
-        
-        // Check if this property is already selected for payment
-        const isSelected = window.MonopolyDeal.gameState.selectedPaymentAssets.properties.some(
-          prop => prop.color === color && prop.index === index
-        );
-        
-        if (isSelected) {
-          cardElement.classList.add('selected');
+    // Count regular properties and wildcards
+    properties.forEach(property => {
+      if (property.wildcard) {
+        // For 10-way wildcards (can be any color)
+        if (property.originalColors && property.originalColors.includes('any')) {
+          effectiveCount++;
         }
-        
-        // Add payment overlay
-        const overlay = document.createElement('div');
-        overlay.className = 'property-payment-overlay';
-        overlay.textContent = isSelected ? 'Selected' : 'Select';
-        cardElement.appendChild(overlay);
-        
-        // Add click handler to toggle selection
-        cardElement.addEventListener('click', function() {
-          window.MonopolyDeal.togglePaymentAsset('property', index, color);
-        });
-      }
-      
-      cardElement.innerHTML += `
-        <div class="property-name">${card.name}</div>
-        <div class="property-value">$${card.value}M</div>`;
-      
-      // Determine which row to add the card to
-      // First 3 cards go in the top row, the rest go in the bottom row
-      if (index < 3) {
-        topRowElement.appendChild(cardElement);
+        // For 2-way wildcards
+        else if (property.originalColors && property.originalColors.length === 2) {
+          effectiveCount++;
+        }
       } else {
-        bottomRowElement.appendChild(cardElement);
+        effectiveCount++;
       }
     });
     
-    // Add rows to the property group
-    colorGroupElement.appendChild(topRowElement);
-    colorGroupElement.appendChild(bottomRowElement);
-    
-    // Only append the property group if it has cards
-    if (cards.length > 0) {
-      propertiesElement.appendChild(colorGroupElement);
+    // Add monopoly class if we have enough properties
+    if (effectiveCount >= requiredCount) {
+      groupElement.classList.add('monopoly');
     }
+    
+    // Add properties to the group
+    properties.forEach((property, index) => {
+      const propertyElement = document.createElement('div');
+      propertyElement.className = 'card property-card played';
+      propertyElement.dataset.cardId = property.id;
+      
+      // Get the image path for the property
+      const imagePath = window.MonopolyDeal.getCardImagePath(property);
+      
+      if (imagePath) {
+        // Use property image
+        propertyElement.style.backgroundImage = `url('${imagePath}')`;
+        propertyElement.style.backgroundSize = 'cover';
+        propertyElement.style.backgroundPosition = 'center';
+        propertyElement.style.backgroundRepeat = 'no-repeat';
+      } else {
+        // Fallback to text display
+        propertyElement.innerHTML = `
+          <div class="property-name">${property.name}</div>
+          <div class="property-value">$${property.value}M</div>`;
+      }
+      
+      // Simple wildcard handling - just check if it's a wildcard and add click handler
+      if (property.wildcard && property.colors) {
+        propertyElement.classList.add('wildcard');
+        
+        // For 10-way wildcards
+        if (property.colors[0] === 'any' || property.originalColors[0] === 'any') {
+          propertyElement.addEventListener('click', function() {
+            window.MonopolyDeal.showColorSelectionModal(playerNumber, color, index);
+          });
+        }
+        // For 2-way wildcards
+        else if (property.colors.length === 2) {
+          propertyElement.addEventListener('click', function() {
+            window.MonopolyDeal.flipWildcardProperty(playerNumber, color, index);
+          });
+        }
+      }
+      
+      groupElement.appendChild(propertyElement);
+    });
+    
+    propertiesElement.appendChild(groupElement);
   });
   
   return true;
@@ -2371,10 +2503,23 @@ window.MonopolyDeal.placeActionCard = function(card) {
     // Create card element based on the action card
     const cardElement = document.createElement('div');
     cardElement.className = 'card action-card';
-    cardElement.innerHTML = `
-      <div class="action-name">${card.name}</div>
-      <div class="action-description">${card.description}</div>
-      <div class="action-value">$${card.value}M</div>`;
+    
+    // Get the image path for the card
+    const imagePath = window.MonopolyDeal.getCardImagePath(card);
+    
+    if (imagePath) {
+      // Use card image
+      cardElement.style.backgroundImage = `url('${imagePath}')`;
+      cardElement.style.backgroundSize = 'cover';
+      cardElement.style.backgroundPosition = 'center';
+      cardElement.style.backgroundRepeat = 'no-repeat';
+    } else {
+      // Fallback to text display
+      cardElement.innerHTML = `
+        <div class="action-name">${card.name}</div>
+        <div class="action-description">${card.description}</div>
+        <div class="action-value">$${card.value}M</div>`;
+    }
     
     // Add card to the action pile
     actionPile.appendChild(cardElement);
@@ -2445,4 +2590,883 @@ window.MonopolyDeal.processPayment = function() {
   return false;
 };
 
+// Function to flip a wildcard property
+window.MonopolyDeal.flipWildcardProperty = function(playerNumber, currentColor, cardIndex) {
+  console.log(`Flipping wildcard property for player ${playerNumber} from ${currentColor} group at index ${cardIndex}`);
+  
+  // Get the player's properties
+  const playerProperties = window.MonopolyDeal.gameState.players[playerNumber].properties;
+  
+  // Get the specific card
+  const card = playerProperties[currentColor][cardIndex];
+  
+  // Verify it's a wildcard with multiple colors
+  if (!card || !card.wildcard || !card.originalColors || card.originalColors.length <= 1) {
+    console.warn("This is not a valid multicolor wildcard property");
+    return false;
+  }
+  
+  // Find the next color in the original colors list
+  let nextColor;
+  
+  if (card.originalColors.length === 2) {
+    // Simple swap between the two colors
+    nextColor = card.originalColors.find(color => color !== currentColor);
+    
+    // Toggle the flipped state
+    card.isFlipped = !card.isFlipped;
+    
+    // Update the card's image in the DOM
+    const cardElement = document.querySelector(`[data-card-id="${card.id}"]`);
+    if (cardElement) {
+      const newImagePath = window.MonopolyDeal.getCardImagePath(card);
+      cardElement.style.backgroundImage = `url('${newImagePath}')`;
+    }
+  } else {
+    // Rotate through all colors for multi-color wildcards
+    const currentColorIndex = card.originalColors.indexOf(card.activeColor || currentColor);
+    const nextColorIndex = (currentColorIndex + 1) % card.originalColors.length;
+    nextColor = card.originalColors[nextColorIndex];
+  }
+  
+  console.log(`Switching from ${currentColor} to ${nextColor}`);
+  
+  // Remove the card from the current color group
+  playerProperties[currentColor].splice(cardIndex, 1);
+  
+  // Update the card's active color and swap the secondary color
+  card.activeColor = nextColor;
+  card.color = nextColor;
+  
+  // If it's a dual-color card, we need to properly swap primary and secondary colors
+  if (card.originalColors.length === 2) {
+    card.secondaryColor = currentColor; // The current color becomes the secondary color
+  }
+  
+  // Initialize the next color group if it doesn't exist
+  if (!playerProperties[nextColor]) {
+    playerProperties[nextColor] = [];
+  }
+  
+  // Add the card to the next color group
+  playerProperties[nextColor].push(card);
+  
+  // Update the UI
+  window.MonopolyDeal.updatePlayerPropertiesUI(playerNumber);
+  
+  // Update game status
+  window.MonopolyDeal.updateGameStatus(`Player ${playerNumber} switched a wildcard property from ${currentColor} to ${nextColor}`);
+  window.MonopolyDeal.addToHistory(`Player ${playerNumber} switched a wildcard property from ${currentColor} to ${nextColor}`);
+  
+  return true;
+};
+
+// Show action response options (like Just Say No) when an action targets a player
+window.MonopolyDeal.showActionResponseOptions = function() {
+  console.log('Showing action response options...');
+  
+  const actionResponse = window.MonopolyDeal.gameState.actionResponse;
+  
+  // Only show if an action is pending
+  if (!actionResponse.pending) {
+    console.log('No action response pending');
+    return false;
+  }
+  
+  // Update UI based on whose perspective we're in
+  const currentPerspective = window.MonopolyDeal.currentPerspective;
+  
+  // Create a response UI container if it doesn't exist
+  let responseContainer = document.getElementById('action-response-container');
+  if (!responseContainer) {
+    responseContainer = document.createElement('div');
+    responseContainer.id = 'action-response-container';
+    responseContainer.className = 'action-response-container';
+    document.querySelector('.right-sidebar .sidebar-content').appendChild(responseContainer);
+  }
+  
+  // Clear any existing content
+  responseContainer.innerHTML = '';
+  
+  // If we're in the perspective of the player who needs to respond
+  if (currentPerspective === actionResponse.fromPlayer) {
+    // Create the response UI
+    const headerEl = document.createElement('h3');
+    headerEl.textContent = 'Action Pending';
+    responseContainer.appendChild(headerEl);
+    
+    // Show what action is being responded to
+    const actionInfoEl = document.createElement('div');
+    actionInfoEl.className = 'action-info';
+    
+    // Format based on action type
+    let actionDescription = '';
+    switch(actionResponse.type) {
+      case 'payment':
+        actionDescription = `Player ${actionResponse.toPlayer} is requesting payment of $${actionResponse.payload.amount}M`;
+        break;
+      default:
+        actionDescription = `Player ${actionResponse.toPlayer} is taking action against you`;
+        break;
+    }
+    
+    actionInfoEl.textContent = actionDescription;
+    responseContainer.appendChild(actionInfoEl);
+    
+    // Add waiting message to make it clear the game is waiting
+    const waitingMsg = document.createElement('div');
+    waitingMsg.className = 'response-waiting';
+    waitingMsg.textContent = 'Game is waiting for your response';
+    responseContainer.appendChild(waitingMsg);
+    
+    // Create question prompt
+    const questionEl = document.createElement('div');
+    questionEl.className = 'response-question';
+    questionEl.textContent = 'Use "Just Say No" to block this action?';
+    responseContainer.appendChild(questionEl);
+    
+    // Check if player has Just Say No card
+    const hasJustSayNo = window.MonopolyDeal.playerHasJustSayNo(currentPerspective);
+    
+    // Create a vertical tab with buttons
+    const buttonsTab = document.createElement('div');
+    buttonsTab.className = 'response-tab';
+    
+    // Yes button (Use Just Say No)
+    const yesBtn = document.createElement('button');
+    yesBtn.className = 'response-btn just-say-no-btn';
+    yesBtn.textContent = 'Yes, Use "Just Say No"';
+    yesBtn.disabled = !hasJustSayNo;
+    yesBtn.title = hasJustSayNo ? 'Use Just Say No card' : 'You don\'t have a Just Say No card';
+    yesBtn.addEventListener('click', function() {
+      window.MonopolyDeal.useJustSayNo();
+    });
+    
+    // No button (Accept Action)
+    const noBtn = document.createElement('button');
+    noBtn.className = 'response-btn proceed-btn';
+    noBtn.textContent = 'No, Accept the Action';
+    noBtn.title = 'Accept the action and continue';
+    noBtn.addEventListener('click', function() {
+      window.MonopolyDeal.acceptAction();
+    });
+    
+    // Add buttons to tab (stacked vertically)
+    buttonsTab.appendChild(yesBtn);
+    buttonsTab.appendChild(noBtn);
+    responseContainer.appendChild(buttonsTab);
+    
+    // If player doesn't have Just Say No, show a message
+    if (!hasJustSayNo) {
+      const noCardMsg = document.createElement('div');
+      noCardMsg.className = 'no-card-message';
+      noCardMsg.textContent = 'You don\'t have a Just Say No card in your hand';
+      responseContainer.appendChild(noCardMsg);
+    }
+    
+    // Make container visible
+    responseContainer.classList.add('visible');
+  } else {
+    // If we're in the perspective of the action initiator
+    if (currentPerspective === actionResponse.toPlayer) {
+      // Show waiting message
+      const headerEl = document.createElement('h3');
+      headerEl.textContent = 'Action Pending';
+      responseContainer.appendChild(headerEl);
+      
+      const waitingMsgEl = document.createElement('div');
+      waitingMsgEl.className = 'waiting-message';
+      waitingMsgEl.textContent = `Waiting for Player ${actionResponse.fromPlayer} to respond...`;
+      responseContainer.appendChild(waitingMsgEl);
+      
+      // Add description of possible responses
+      const responseInfoEl = document.createElement('div');
+      responseInfoEl.className = 'response-info';
+      responseInfoEl.textContent = `Player ${actionResponse.fromPlayer} may use a Just Say No card or accept your action.`;
+      responseContainer.appendChild(responseInfoEl);
+      
+      // Make container visible
+      responseContainer.classList.add('visible');
+    } else {
+      // Not relevant to current perspective
+      responseContainer.classList.remove('visible');
+    }
+  }
+  
+  return true;
+};
+
+// Check if a player has a Just Say No card in their hand
+window.MonopolyDeal.playerHasJustSayNo = function(playerNumber) {
+  const player = window.MonopolyDeal.gameState.players[playerNumber];
+  if (!player || !player.hand) return false;
+  
+  return player.hand.some(card => 
+    card.type === 'action' && 
+    card.action === window.MonopolyDeal.ActionTypes.JUST_SAY_NO
+  );
+};
+
+// Handle using a Just Say No card
+window.MonopolyDeal.useJustSayNo = function() {
+  console.log('Using Just Say No card...');
+  
+  const actionResponse = window.MonopolyDeal.gameState.actionResponse;
+  const currentPlayer = actionResponse.fromPlayer; // Player responding to the action
+  
+  // Find Just Say No card in player's hand
+  const player = window.MonopolyDeal.gameState.players[currentPlayer];
+  const justSayNoIndex = player.hand.findIndex(card => 
+    card.type === 'action' && 
+    card.action === window.MonopolyDeal.ActionTypes.JUST_SAY_NO
+  );
+  
+  if (justSayNoIndex === -1) {
+    console.warn('Player does not have a Just Say No card');
+    window.MonopolyDeal.updateGameStatus('You do not have a Just Say No card');
+    return false;
+  }
+  
+  // Remove Just Say No card from hand
+  const justSayNoCard = player.hand.splice(justSayNoIndex, 1)[0];
+  
+  // Add to the discard pile
+  window.MonopolyDeal.gameState.discardPile.push(justSayNoCard);
+  
+  // Increment the Just Say No chain
+  actionResponse.justSayNoChain++;
+  
+  // Update game status
+  window.MonopolyDeal.updateGameStatus(`Player ${currentPlayer} used Just Say No against Player ${actionResponse.toPlayer}'s action!`);
+  window.MonopolyDeal.addToHistory(`Player ${currentPlayer} used Just Say No to block ${actionResponse.type} from Player ${actionResponse.toPlayer}`);
+  
+  // Swap the action response roles (action initiator can now counter with another Just Say No)
+  const temp = actionResponse.fromPlayer;
+  actionResponse.fromPlayer = actionResponse.toPlayer;
+  actionResponse.toPlayer = temp;
+  
+  // Update UI
+  window.MonopolyDeal.updateAllPlayerUIs();
+  window.MonopolyDeal.showActionResponseOptions();
+  
+  return true;
+};
+
+// Handle accepting the action (no Just Say No)
+window.MonopolyDeal.acceptAction = function() {
+  console.log('Accepting action...');
+  
+  const actionResponse = window.MonopolyDeal.gameState.actionResponse;
+  
+  // Handle based on action type
+  switch(actionResponse.type) {
+    case 'payment':
+      // If the original action was payment and it's accepted,
+      // proceed with payment UI
+      window.MonopolyDeal.updateGameStatus(`Player ${actionResponse.fromPlayer} must pay $${actionResponse.payload.amount}M to Player ${actionResponse.toPlayer}`);
+      window.MonopolyDeal.addToHistory(`Player ${actionResponse.fromPlayer} accepted the payment request`);
+      
+      // Clear action response but keep payment pending
+      window.MonopolyDeal.gameState.actionResponse.pending = false;
+      
+      // If Just Say No chain is even, action proceeds; if odd, action is cancelled
+      if (actionResponse.justSayNoChain % 2 === 1) {
+        // Odd number of Just Say No cards, action is cancelled
+        window.MonopolyDeal.cancelPayment();
+        window.MonopolyDeal.updateGameStatus(`Action cancelled after ${actionResponse.justSayNoChain} Just Say No ${actionResponse.justSayNoChain === 1 ? 'card' : 'cards'}`);
+        window.MonopolyDeal.addToHistory(`Action cancelled by Just Say No chain`);
+      } else {
+        // Show payment modal if action proceeds
+        window.MonopolyDeal.showPaymentModal();
+      }
+      break;
+      
+    default:
+      // For other action types, just complete the action
+      window.MonopolyDeal.updateGameStatus(`Player ${actionResponse.fromPlayer} accepted Player ${actionResponse.toPlayer}'s action`);
+      window.MonopolyDeal.addToHistory(`Player ${actionResponse.fromPlayer} accepted the action`);
+      
+      // Clear action response
+      window.MonopolyDeal.gameState.actionResponse.pending = false;
+      break;
+  }
+  
+  // Update UI
+  window.MonopolyDeal.updateAllPlayerUIs();
+  
+  // Hide response options
+  const responseContainer = document.getElementById('action-response-container');
+  if (responseContainer) {
+    responseContainer.classList.remove('visible');
+  }
+  
+  return true;
+};
+
+// Cancel a payment in progress
+window.MonopolyDeal.cancelPayment = function() {
+  console.log('Cancelling payment...');
+  
+  // Clear payment request
+  window.MonopolyDeal.gameState.paymentPending = false;
+  window.MonopolyDeal.gameState.paymentRequest = null;
+  window.MonopolyDeal.gameState.selectedPaymentAssets = {
+    money: [],
+    properties: []
+  };
+  
+  // Clear action response
+  window.MonopolyDeal.gameState.actionResponse = {
+    pending: false,
+    type: null,
+    fromPlayer: null,
+    toPlayer: null,
+    justSayNoChain: 0,
+    actionCard: null,
+    payload: null
+  };
+  
+  // Update UI
+  window.MonopolyDeal.updateAllPlayerUIs();
+  
+  return true;
+};
+
+// Update button states based on game state
+window.MonopolyDeal.updateButtonStates = function() {
+  const gameStarted = window.MonopolyDeal.gameState.gameStarted;
+  const currentPlayer = window.MonopolyDeal.gameState.currentPlayer;
+  const hasDrawnCards = window.MonopolyDeal.gameState.hasDrawnCards;
+  const paymentPending = window.MonopolyDeal.gameState.paymentPending;
+  const currentPerspective = window.MonopolyDeal.currentPerspective;
+  const actionResponsePending = window.MonopolyDeal.gameState.actionResponse.pending;
+  
+  // Get button references
+  const startButton = window.MonopolyDeal.elements.startButton;
+  const drawButton = window.MonopolyDeal.elements.drawButton;
+  const endTurnButton = window.MonopolyDeal.elements.endTurnButton;
+  const switchPerspectiveButton = window.MonopolyDeal.elements.switchPerspectiveButton;
+  
+  // Start button: Disabled if game already started
+  if (startButton) {
+    startButton.disabled = gameStarted;
+  }
+  
+  // Draw button: Enabled only if it's the current player's turn,
+  // the current perspective matches, game started, cards haven't been drawn yet,
+  // and no payment is pending or action response is pending
+  if (drawButton) {
+    drawButton.disabled = !gameStarted || 
+                          currentPerspective !== currentPlayer ||
+                          hasDrawnCards ||
+                          paymentPending ||
+                          actionResponsePending;
+  }
+  
+  // End turn button: Enabled only if it's the current player's turn,
+  // the current perspective matches, game started, cards have been drawn,
+  // and no payment is pending or action response is pending
+  if (endTurnButton) {
+    endTurnButton.disabled = !gameStarted || 
+                            currentPerspective !== currentPlayer ||
+                            !hasDrawnCards ||
+                            paymentPending ||
+                            actionResponsePending;
+  }
+  
+  // Switch perspective button: Always enabled if game started
+  if (switchPerspectiveButton) {
+    switchPerspectiveButton.disabled = !gameStarted;
+    switchPerspectiveButton.textContent = `Switch to Player ${currentPerspective === 1 ? '2' : '1'}'s View`;
+    switchPerspectiveButton.title = `Switch to Player ${currentPerspective === 1 ? '2' : '1'}'s perspective`;
+  }
+  
+  // Update action response UI
+  if (actionResponsePending) {
+    window.MonopolyDeal.showActionResponseOptions();
+  }
+  
+  return true;
+};
+
 console.log('GameState.js loaded successfully!'); 
+
+// Show color selection modal for full wildcard property
+window.MonopolyDeal.showColorSelectionModal = function(playerNumber, currentColor, cardIndex) {
+  console.log(`Showing color selection modal for player ${playerNumber}'s wildcard property`);
+  
+  // Get the player's properties
+  const playerProperties = window.MonopolyDeal.gameState.players[playerNumber].properties;
+  
+  // Get the specific card
+  const card = playerProperties[currentColor][cardIndex];
+  
+  // Verify it's a full wildcard
+  if (!card || !card.wildcard || !card.originalColors || !card.originalColors.includes('any')) {
+    console.warn("This is not a valid full wildcard property");
+    return false;
+  }
+  
+  // Create modal if it doesn't exist
+  let modal = document.getElementById('color-selection-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'color-selection-modal';
+    modal.className = 'modal';
+    
+    const modalContent = document.createElement('div');
+    modalContent.className = 'modal-content';
+    
+    // Add header
+    const header = document.createElement('div');
+    header.className = 'modal-header';
+    header.innerHTML = `
+      <h2>Select Property Group</h2>
+      <span class="close-modal">&times;</span>
+    `;
+    modalContent.appendChild(header);
+    
+    // Add body
+    const body = document.createElement('div');
+    body.className = 'modal-body';
+    modalContent.appendChild(body);
+    
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+  }
+  
+  const modalBody = modal.querySelector('.modal-body');
+  modalBody.innerHTML = '';
+  
+  // Get all colors where player has properties
+  const availableColors = Object.entries(playerProperties)
+    .filter(([color, props]) => props.length > 0 && color !== currentColor)
+    .map(([color]) => color);
+  
+  if (availableColors.length === 0) {
+    modalBody.innerHTML = '<div class="empty-message">You have no property sets to add this wildcard to.</div>';
+    return;
+  }
+  
+  // Create color options grid
+  const colorGrid = document.createElement('div');
+  colorGrid.className = 'color-options';
+  
+  availableColors.forEach(color => {
+    const option = document.createElement('div');
+    option.className = 'color-option';
+    option.dataset.color = color;
+    
+    // Count properties in this color group
+    const propertyCount = playerProperties[color].length;
+    
+    option.innerHTML = `
+      <div class="color-indicator ${color}-indicator"></div>
+      <div class="color-info">
+        <div class="color-name">${color.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+        <div class="property-count">${propertyCount} ${propertyCount === 1 ? 'Property' : 'Properties'}</div>
+      </div>
+    `;
+    
+    option.addEventListener('click', () => {
+      window.MonopolyDeal.changeWildcardColor(playerNumber, currentColor, cardIndex, color);
+      window.MonopolyDeal.hideColorSelectionModal();
+    });
+    
+    colorGrid.appendChild(option);
+  });
+  
+  modalBody.appendChild(colorGrid);
+  
+  // Add close button functionality
+  const closeBtn = modal.querySelector('.close-modal');
+  closeBtn.onclick = () => window.MonopolyDeal.hideColorSelectionModal();
+  
+  // Show modal
+  modal.style.display = 'flex';
+  
+  return true;
+};
+
+// Hide color selection modal
+window.MonopolyDeal.hideColorSelectionModal = function() {
+  const modal = document.getElementById('color-selection-modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+};
+
+// Change wildcard color and move it to the new property group
+window.MonopolyDeal.changeWildcardColor = function(playerNumber, currentColor, cardIndex, newColor) {
+  console.log(`Changing wildcard color from ${currentColor} to ${newColor}`);
+  
+  // Get the player's properties
+  const playerProperties = window.MonopolyDeal.gameState.players[playerNumber].properties;
+  
+  // Get the specific card
+  const card = playerProperties[currentColor][cardIndex];
+  
+  // Verify it's a wildcard
+  if (!card || !card.wildcard) {
+    console.warn("This is not a valid wildcard property");
+    return false;
+  }
+  
+  // Remove the card from the current color group
+  playerProperties[currentColor].splice(cardIndex, 1);
+  
+  // Update the card's color properties
+  card.color = newColor;
+  card.activeColor = newColor;
+  
+  // Initialize the new color group if it doesn't exist
+  if (!playerProperties[newColor]) {
+    playerProperties[newColor] = [];
+  }
+  
+  // Add the card to the new color group
+  playerProperties[newColor].push(card);
+  
+  // Update the UI
+  window.MonopolyDeal.updatePlayerPropertiesUI(playerNumber);
+  
+  // Update game status
+  window.MonopolyDeal.updateGameStatus(`Player ${playerNumber} assigned a wildcard property to the ${newColor} group`);
+  window.MonopolyDeal.addToHistory(`Player ${playerNumber} assigned a wildcard property to the ${newColor} group`);
+  
+  return true;
+};
+
+// Add event listener to close modal when clicking outside
+document.addEventListener('click', function(event) {
+  const modal = document.getElementById('color-selection-modal');
+  if (modal && event.target === modal) {
+    window.MonopolyDeal.hideColorSelectionModal();
+  }
+});
+
+// Calculate the total value of a player's available assets (excluding 10-way wildcards)
+window.MonopolyDeal.calculateAvailableAssets = function(playerNumber) {
+  console.log(`========== Calculating available asset value for player ${playerNumber} (excluding protected wildcards) ==========`);
+  const player = window.MonopolyDeal.gameState.players[playerNumber];
+  let totalValue = 0;
+  
+  // Add money
+  console.log(`Money cards: ${player.money.length}`);
+  player.money.forEach(card => {
+    totalValue += parseInt(card.value);
+    console.log(`  Money card: $${card.value}M`);
+  });
+  
+  // Add properties (excluding 10-way wildcards)
+  console.log(`Checking properties by color:`);
+  Object.keys(player.properties).forEach(color => {
+    console.log(`  Color group: ${color} - ${player.properties[color].length} cards`);
+    player.properties[color].forEach(card => {
+      // Skip 10-way wildcard properties
+      if (card.wildcard && card.originalColors && 
+          (card.originalColors.includes('any') || card.originalColors[0] === 'any')) {
+        console.log(`  * PROTECTED: 10-way wildcard worth $${card.value}M - "${card.name}"`);
+        return;
+      }
+      
+      totalValue += parseInt(card.value);
+      console.log(`  * Property: ${card.name} - $${card.value}M`);
+    });
+  });
+  
+  console.log(`Player ${playerNumber} has available assets worth $${totalValue}M (excluding protected wildcards)`);
+  console.log(`==========================================================`);
+  return totalValue;
+};
+
+// Take all available assets from one player (except 10-way wildcards)
+window.MonopolyDeal.takeAllAvailableAssets = function(fromPlayerNumber, toPlayerNumber) {
+  console.log(`========== Taking all available assets from Player ${fromPlayerNumber} to Player ${toPlayerNumber} ==========`);
+  
+  const fromPlayer = window.MonopolyDeal.gameState.players[fromPlayerNumber];
+  const toPlayer = window.MonopolyDeal.gameState.players[toPlayerNumber];
+  
+  if (!fromPlayer || !toPlayer) {
+    console.error('Invalid player numbers!');
+    return false;
+  }
+  
+  // Calculate initial assets for logging
+  const initialFromTotal = window.MonopolyDeal.calculateAvailableAssets(fromPlayerNumber);
+  console.log(`Player ${fromPlayerNumber} starting with $${initialFromTotal}M in available assets`);
+  
+  // Transfer all money cards
+  console.log(`Transferring money cards (${fromPlayer.money.length} cards):`);
+  while (fromPlayer.money.length > 0) {
+    const moneyCard = fromPlayer.money[0];
+    toPlayer.money.push(moneyCard);
+    fromPlayer.money.splice(0, 1);
+    console.log(`  Transferred money card worth $${moneyCard.value}M from Player ${fromPlayerNumber} to Player ${toPlayerNumber}`);
+  }
+  
+  // Transfer all property cards (except 10-way wildcards)
+  console.log(`Transferring property cards by color group:`);
+  Object.keys(fromPlayer.properties).forEach(color => {
+    console.log(`  Color group: ${color} - ${fromPlayer.properties[color].length} cards`);
+    
+    // Process each property in reverse order to handle array splicing
+    for (let i = fromPlayer.properties[color].length - 1; i >= 0; i--) {
+      const propertyCard = fromPlayer.properties[color][i];
+      
+      // Skip 10-way wildcard properties
+      if (propertyCard.wildcard && propertyCard.originalColors && 
+          (propertyCard.originalColors.includes('any') || propertyCard.originalColors[0] === 'any')) {
+        console.log(`  * PROTECTED: Skipping 10-way wildcard property "${propertyCard.name}"`);
+        continue;
+      }
+      
+      // Ensure recipient has the color array
+      if (!toPlayer.properties[color]) {
+        toPlayer.properties[color] = [];
+      }
+      
+      // Add to recipient and remove from sender
+      toPlayer.properties[color].push(propertyCard);
+      fromPlayer.properties[color].splice(i, 1);
+      
+      console.log(`  * Transferred ${color} property "${propertyCard.name}" worth $${propertyCard.value}M`);
+    }
+  });
+  
+  // Calculate final assets for logging
+  const finalFromTotal = window.MonopolyDeal.calculateAvailableAssets(fromPlayerNumber);
+  console.log(`Player ${fromPlayerNumber} now has $${finalFromTotal}M in available assets (should be 0 plus protected wildcards)`);
+  console.log(`==========================================================`);
+  
+  // Update actions left counter after transferring assets
+  window.MonopolyDeal.updateActionsLeftCounter();
+  
+  return true;
+};
+
+// Export the new functions
+window.MonopolyDeal.calculateAvailableAssets = window.MonopolyDeal.calculateAvailableAssets;
+window.MonopolyDeal.takeAllAvailableAssets = window.MonopolyDeal.takeAllAvailableAssets;
+window.MonopolyDeal.hasAnyAvailableAssets = window.MonopolyDeal.hasAnyAvailableAssets;
+
+// Check if a player has any available assets (money or properties, excluding 10-way wildcards)
+window.MonopolyDeal.hasAnyAvailableAssets = function(playerNumber) {
+  console.log(`Checking if player ${playerNumber} has any available assets...`);
+  const player = window.MonopolyDeal.gameState.players[playerNumber];
+  
+  // Check if player has any money
+  if (player.money.length > 0) {
+    console.log(`Player ${playerNumber} has money cards: ${player.money.length}`);
+    return true;
+  }
+  
+  // Check if player has any properties (excluding 10-way wildcards)
+  for (const color in player.properties) {
+    for (const property of player.properties[color]) {
+      // Skip 10-way wildcard properties
+      if (property.wildcard && property.originalColors && 
+          (property.originalColors.includes('any') || property.originalColors[0] === 'any')) {
+        continue;
+      }
+      
+      // Found a regular property
+      console.log(`Player ${playerNumber} has available property: ${property.name}`);
+      return true;
+    }
+  }
+  
+  console.log(`Player ${playerNumber} has no available assets (no money and no non-wildcard properties)`);
+  return false;
+};
+
+// Export the new functions
+window.MonopolyDeal.calculateAvailableAssets = window.MonopolyDeal.calculateAvailableAssets;
+window.MonopolyDeal.takeAllAvailableAssets = window.MonopolyDeal.takeAllAvailableAssets;
+window.MonopolyDeal.hasAnyAvailableAssets = window.MonopolyDeal.hasAnyAvailableAssets;
+
+// Update the actions left counter
+window.MonopolyDeal.updateActionsLeftCounter = function() {
+  const actionsLeftCounter = document.getElementById('actions-left-counter');
+  const currentPlayerIndicator = document.getElementById('current-player-indicator');
+  
+  if (!actionsLeftCounter || !currentPlayerIndicator) return;
+  
+  // Update the current player indicator
+  const currentPlayer = window.MonopolyDeal.gameState.currentPlayer;
+  currentPlayerIndicator.textContent = `Player ${currentPlayer}`;
+  
+  // If cards haven't been drawn yet, show "Draw"
+  if (!window.MonopolyDeal.gameState.hasDrawnCards) {
+    actionsLeftCounter.textContent = "Draw";
+    actionsLeftCounter.classList.remove('zero');
+    return;
+  }
+  
+  // Simply show remaining actions (3 - cards played)
+  const maxActionsPerTurn = 3;
+  const actionsPlayed = window.MonopolyDeal.gameState.cardsPlayedThisTurn;
+  const actionsLeft = Math.max(0, maxActionsPerTurn - actionsPlayed);
+  
+  // Just display the number directly
+  actionsLeftCounter.textContent = actionsLeft;
+  
+  // Add 'zero' class only if no actions left
+  if (actionsLeft === 0) {
+    actionsLeftCounter.classList.add('zero');
+  } else {
+    actionsLeftCounter.classList.remove('zero');
+  }
+};
+
+// Export the function
+window.MonopolyDeal.updateActionsLeftCounter = window.MonopolyDeal.updateActionsLeftCounter;
+
+// Helper function to get card image path
+window.MonopolyDeal.getCardImagePath = function(card) {
+  if (card.type === 'money') {
+    let filename;
+    switch (card.value) {
+      case 1:
+        filename = '1million';
+        break;
+      case 2:
+        filename = '2million';
+        break;
+      case 3:
+        filename = '3million';
+        break;
+      case 4:
+        filename = '4million';
+        break;
+      case 5:
+        filename = '5million';
+        break;
+      case 10:
+        filename = '10million';
+        break;
+      default:
+        return null;
+    }
+    return `images/cards/${filename}.jpg`;
+  }
+  
+  if (card.type === 'property') {
+    let filename;
+    if (card.wildcard) {
+      // Use the imageCode directly if available
+      if (card.imageCode) {
+        filename = card.imageCode;
+        // Add _flipped suffix if card is flipped
+        if (card.isFlipped) {
+          filename += '_flipped';
+        }
+      } else if (card.colors && card.colors[0] === 'any') {
+        filename = 'propertywildcard';
+      }
+    } else {
+      // Regular properties - exact filenames from directory
+      const propertyNameMap = {
+        'St. James Place': 'stjamesplace',
+        'St. Charles Place': 'stcharlesplace',
+        'States Avenue': 'statesavenue',
+        'Virginia Avenue': 'virginiaavenue',
+        'Tennessee Avenue': 'tennesseeavenue',
+        'New York Avenue': 'newyorkavenue',
+        'Kentucky Avenue': 'kentuckyavenue',
+        'Indiana Avenue': 'indianaavenue',
+        'Illinois Avenue': 'illinoisavenue',
+        'Atlantic Avenue': 'atlanticavenue',
+        'Ventnor Avenue': 'ventnoravenue',
+        'Marvin Gardens': 'marvingardens',
+        'Pacific Avenue': 'pacificavenue',
+        'North Carolina Avenue': 'northcarolinaavenue',
+        'Pennsylvania Avenue': 'pennsylvaniaavenue',
+        'Park Place': 'parkplace',
+        'Boardwalk': 'boardwalk',
+        'Reading Railroad': 'readingrailroad',
+        'Pennsylvania Railroad': 'pennsylvaniarailroad',
+        'B. & O. Railroad': 'b&orailroad',
+        'Short Line': 'shortline',
+        'Electric Company': 'electriccompany',
+        'Water Works': 'waterworks',
+        'Mediterranean Avenue': 'mediterraneanavenue',
+        'Baltic Avenue': 'balticavenue',
+        'Oriental Avenue': 'orientalavenue',
+        'Vermont Avenue': 'vermontavenue',
+        'Connecticut Avenue': 'connecticutavenue'
+      };
+      filename = propertyNameMap[card.name];
+      if (!filename) {
+        console.error('Unknown property name:', card.name);
+        return null;
+      }
+    }
+    return `images/cards/${filename}.jpg`;
+  }
+  
+  if (card.type === 'action') {
+    let filename;
+    switch (card.action) {
+      case 'pass-go':
+        filename = 'passgo';
+        break;
+      case 'deal-breaker':
+        filename = 'dealbreaker';
+        break;
+      case 'sly-deal':
+        filename = 'slydeal';
+        break;
+      case 'forced-deal':
+        filename = 'forceddeal';
+        break;
+      case 'debt-collector':
+        filename = 'debtcollector';
+        break;
+      case 'birthday':
+        filename = 'itsmybirthday';
+        break;
+      case 'just-say-no':
+        filename = 'justsayno';
+        break;
+      case 'house':
+        filename = 'house';
+        break;
+      case 'hotel':
+        filename = 'hotel';
+        break;
+      case 'double-rent':
+        filename = 'doubletherent';
+        break;
+      case 'wild-rent':
+        filename = 'rentwild';
+        break;
+      case 'property-rent':
+        switch (card.rentType) {
+          case 'brown-light-blue':
+            filename = 'rentlbbr';
+            break;
+          case 'purple-orange':
+            filename = 'rentop';
+            break;
+          case 'red-yellow':
+            filename = 'rentry';
+            break;
+          case 'green-blue':
+            filename = 'rentbg';
+            break;
+          case 'railroad-utility':
+            filename = 'rentut';
+            break;
+          default:
+            return null;
+        }
+        break;
+      default:
+        return null;
+    }
+    return `images/cards/${filename}.jpg`;
+  }
+  
+  return null;
+};

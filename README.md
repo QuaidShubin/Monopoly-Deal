@@ -4,15 +4,7 @@ A web-based implementation of the Monopoly Deal card game with simplified game l
 
 ## Project Structure
 
-```
-monopoly-deal/
-├── index.html          # Main game interface
-├── styles.css          # Game styling
-├── cards.js            # Card definitions and card-related functions
-├── gameState.js        # Game state management
-├── ui.js               # UI helper functions
-└── scripts.js          # Main game logic and UI handlers
-```
+- NEED to update
 
 ## Game Features
 

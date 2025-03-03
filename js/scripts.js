@@ -93,8 +93,6 @@ window.MonopolyDeal.updateButtonStates = function() {
   const drawButton = window.MonopolyDeal.elements.drawButton;
   const endTurnButton = window.MonopolyDeal.elements.endTurnButton;
   const switchPerspectiveButton = window.MonopolyDeal.elements.switchPerspectiveButton;
-  const paymentActionContainer = document.getElementById('payment-action-container');
-  const makePaymentButton = document.getElementById('make-payment-btn');
   
   // Start button: Disabled if game already started
   if (startButton) {
@@ -126,25 +124,6 @@ window.MonopolyDeal.updateButtonStates = function() {
     switchPerspectiveButton.disabled = !gameStarted;
     switchPerspectiveButton.textContent = `Switch to Player ${currentPerspective === 1 ? '2' : '1'}'s View`;
     switchPerspectiveButton.title = `Switch to Player ${currentPerspective === 1 ? '2' : '1'}'s perspective`;
-  }
-  
-  // Handle payment action button visibility
-  if (paymentActionContainer && makePaymentButton) {
-    // Only show payment button when payment is pending AND the current perspective is the paying player
-    const isPaymentPending = paymentPending && 
-                            window.MonopolyDeal.gameState.paymentRequest && 
-                            window.MonopolyDeal.gameState.paymentRequest.fromPlayer === currentPerspective;
-                            
-    // Update visibility
-    if (isPaymentPending) {
-      paymentActionContainer.classList.add('visible');
-      
-      // Update payment button details
-      const paymentRequest = window.MonopolyDeal.gameState.paymentRequest;
-      makePaymentButton.textContent = `Pay $${paymentRequest.amount}M to Player ${paymentRequest.toPlayer}`;
-    } else {
-      paymentActionContainer.classList.remove('visible');
-    }
   }
   
   return true;
@@ -258,24 +237,6 @@ window.MonopolyDeal.setupDirectEventListeners = function() {
   } else {
     console.error('Switch perspective button element not found');
   }
-  
-  // Make payment button
-  if (window.MonopolyDeal.elements.makePaymentButton) {
-    window.MonopolyDeal.elements.makePaymentButton.addEventListener('click', function() {
-      console.log('Make payment button clicked');
-      
-      // Only the player who needs to pay can process the payment
-      const paymentRequest = window.MonopolyDeal.gameState.paymentRequest;
-      if (paymentRequest && window.MonopolyDeal.currentPerspective === paymentRequest.fromPlayer) {
-        window.MonopolyDeal.processPayment();
-      } else {
-        window.MonopolyDeal.updateGameStatus('Only the player who needs to pay can use this button');
-      }
-    });
-    console.log('Make payment button listener added');
-  } else {
-    console.error('Make payment button element not found');
-  }
 };
 
 // Switch between player perspectives (1 -> 2 -> 1)
@@ -314,28 +275,27 @@ window.MonopolyDeal.switchPerspective = function() {
   // Update UIs to reflect the new perspective
   window.MonopolyDeal.updateAllPlayerUIs();
   
-  // Update game status message to indicate switch
-  window.MonopolyDeal.updateGameStatus(`Switched to Player ${window.MonopolyDeal.currentPerspective}'s perspective`);
-  
-  // If there's a payment pending, show a hint on what to do
-  if (window.MonopolyDeal.gameState.paymentPending) {
-    const paymentRequest = window.MonopolyDeal.gameState.paymentRequest;
-    const payingPlayer = paymentRequest.fromPlayer;
-    
-    if (window.MonopolyDeal.currentPerspective === payingPlayer) {
-      // Show hint that this player needs to pay
-      setTimeout(() => {
-        window.MonopolyDeal.updateGameStatus(`Player ${payingPlayer} needs to pay $${paymentRequest.amount}M to Player ${paymentRequest.toPlayer}`);
-      }, 2000);
-    } else {
-      // Show hint that the other player needs to pay
-      setTimeout(() => {
-        window.MonopolyDeal.updateGameStatus(`Waiting for Player ${payingPlayer} to pay $${paymentRequest.amount}M to Player ${paymentRequest.toPlayer}`);
-      }, 2000);
+  // Check if there's an action response pending and update the UI accordingly
+  if (window.MonopolyDeal.gameState.actionResponse && window.MonopolyDeal.gameState.actionResponse.pending) {
+    window.MonopolyDeal.showActionResponseOptions();
+  } else {
+    // If no action response pending, make sure the response container is hidden
+    const responseContainer = document.getElementById('action-response-container');
+    if (responseContainer) {
+      responseContainer.classList.remove('visible');
     }
   }
   
-  return true;
+  // Check if the current perspective is the player who needs to pay
+  if (window.MonopolyDeal.gameState.paymentPending && 
+      window.MonopolyDeal.gameState.paymentRequest && 
+      window.MonopolyDeal.gameState.paymentRequest.fromPlayer === window.MonopolyDeal.currentPerspective) {
+    // Update UI to show payment options
+    console.log('Current perspective is the player who needs to pay');
+  }
+  
+  // Update game status message to indicate switch
+  window.MonopolyDeal.updateGameStatus(`Switched to Player ${window.MonopolyDeal.currentPerspective}'s perspective`);
 };
 
 // Export functions
@@ -347,4 +307,5 @@ window.MonopolyDeal.setupKeyboardShortcuts = window.MonopolyDeal.setupKeyboardSh
 window.MonopolyDeal.updateAllPlayerUIs = window.MonopolyDeal.updateAllPlayerUIs;
 window.MonopolyDeal.updateButtonStates = window.MonopolyDeal.updateButtonStates;
 
+console.log('Scripts.js loaded successfully!');
 console.log('Scripts.js loaded successfully!');

@@ -291,14 +291,16 @@ header h1 {
     background-color: white;
     display: flex;
     flex-direction: column;
-    padding: 5px;
+    padding: 0;
     position: relative;
     cursor: pointer;
     transition: transform 0.2s ease;
+    overflow: hidden;
 }
 
 .card:hover {
     transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
 }
 
 .card-back {
@@ -310,6 +312,10 @@ header h1 {
     font-weight: bold;
     font-size: 14px;
     text-align: center;
+    background-image: url('../images/cards/cardback.jpg');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 /* Money denomination box styles */
@@ -396,7 +402,7 @@ header h1 {
     display: none;
 }
 
-/* Money card styles */
+/* Money card styles - only used when no image is available */
 .money-card {
     display: flex;
     justify-content: center;
@@ -405,36 +411,39 @@ header h1 {
     font-size: 18px;
     color: white;
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    padding: 5px;
 }
 
 /* Money card colors based on value */
 .money-1-card {
-    background-color: #90caf9 !important; /* Light blue */
+    background-color: #f44336 !important; /* Red */
 }
 
 .money-2-card {
-    background-color: #a5d6a7 !important; /* Light green */
+    background-color: #ff9800 !important; /* Orange */
 }
 
 .money-3-card {
-    background-color: #ffcc80 !important; /* Light orange */
+    background-color: #ffeb3b !important; /* Yellow */
 }
 
 .money-4-card {
-    background-color: #ce93d8 !important; /* Light purple */
+    background-color: #4caf50 !important; /* Green */
 }
 
 .money-5-card {
-    background-color: #ef9a9a !important; /* Light red */
+    background-color: #2196f3 !important; /* Blue */
 }
 
 .money-10-card {
-    background-color: #fff59d !important; /* Light yellow */
+    background-color: #9c27b0 !important; /* Purple */
 }
 
 .card-value {
     font-size: 20px;
     font-weight: bold;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 /* Property card styles */
@@ -734,8 +743,8 @@ header h1 {
     background-color: #fefefe;
     margin: 5% auto;
     padding: 0;
-    border-radius: 8px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
     width: 90%;
     max-width: 600px;
     animation: modalFadeIn 0.3s;
@@ -788,6 +797,88 @@ header h1 {
 /* Payment modal styles */
 .payment-modal-content {
     max-width: 800px;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.payment-section {
+    margin-bottom: 20px;
+}
+
+/* Payment containers */
+.payment-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #f5f5f5;
+    border-radius: 5px;
+    min-height: 100px;
+    max-height: none;
+    overflow-y: visible;
+}
+
+/* Property cards in payment container */
+.payment-container .property-card {
+    width: 70px;
+    height: 105px;
+    transform: scale(0.95);
+    margin: 0;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.payment-container .property-card:hover {
+    transform: scale(1.2);
+    z-index: 100;
+}
+
+.payment-container .payment-selectable {
+    transform: scale(0.95);
+    margin: 0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.payment-container .payment-selectable:hover {
+    transform: translateY(-5px) scale(1.05);
+    z-index: 100;
+}
+
+.payment-container .payment-selected {
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* Empty message styling */
+.empty-message {
+    width: 100%;
+    text-align: center;
+    padding: 20px;
+    color: #666;
+    font-style: italic;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+    margin: 10px 0;
+}
+
+/* Modal body scrolling */
+.modal-body {
+    overflow-y: auto;
+    padding: 20px;
+    flex: 1;
+}
+
+/* Section headers */
+.payment-section h3 {
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #ddd;
+    color: #333;
 }
 
 .payment-header {
@@ -814,25 +905,105 @@ header h1 {
 /* Enhanced progress bar */
 .payment-progress {
     width: 100%;
-    height: 20px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.payment-amount-display {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    width: 100%;
+    font-size: 16px;
+    color: #333;
+}
+
+.payment-current {
+    font-weight: bold;
+    color: #4CAF50;
+    min-width: 60px;
+}
+
+.payment-target {
+    font-weight: bold;
+    color: #666;
+    min-width: 60px;
+}
+
+.payment-bar-container {
+    flex: 1;
+    height: 24px;
     background-color: #e0e0e0;
-    border-radius: 10px;
-    margin: 15px 0;
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
 }
 
-.payment-progress-bar {
+#payment-progress-bar {
     height: 100%;
-    background: linear-gradient(to right, #f44336, #ff9800, #4caf50);
-    transition: width 0.3s ease;
-    box-shadow: 0 0 8px rgba(76, 175, 80, 0.5);
-    width: 0%;
+    width: 0;
+    background: linear-gradient(to right, #4CAF50, #81C784);
+    transition: all 0.3s ease;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
 }
 
-.payment-progress-bar.sufficient {
-    background: linear-gradient(to right, #4caf50, #2196f3);
-    box-shadow: 0 0 8px rgba(33, 150, 243, 0.7);
+#payment-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.2) 25%,
+        transparent 25%,
+        transparent 50%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0.2) 75%,
+        transparent 75%,
+        transparent
+    );
+    background-size: 30px 30px;
+    animation: move-stripes 1s linear infinite;
+}
+
+#payment-progress-bar.sufficient {
+    background: linear-gradient(to right, #4CAF50, #2E7D32);
+    box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+}
+
+@keyframes move-stripes {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 30px 0;
+    }
+}
+
+/* Remove the old payment bar styles */
+.payment-bar {
+    display: none !important;
+}
+
+.payment-bar.visible {
+    display: none !important;
+}
+
+.payment-info-column,
+.payment-bar-header,
+.payment-amount-display,
+.payment-progress-container,
+.payment-progress-fill,
+.payment-pay-button {
+    display: none !important;
 }
 
 .payment-status {
@@ -856,8 +1027,8 @@ header h1 {
     background-color: #f5f5f5;
     border-radius: 5px;
     min-height: 100px;
-    max-height: 200px;
-    overflow-y: auto;
+    max-height: none;
+    overflow-y: visible;
 }
 
 /* Payment button */
@@ -965,9 +1136,9 @@ header h1 {
 .modal-header {
     background-color: #1b5e20;
     color: white;
-    padding: 15px;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
+    padding: 20px;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -975,7 +1146,8 @@ header h1 {
 
 .modal-header h2 {
     margin: 0;
-    font-size: 20px;
+    font-size: 24px;
+    font-weight: 500;
 }
 
 .close-modal {
@@ -990,18 +1162,13 @@ header h1 {
 }
 
 .modal-body {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+    padding: 24px;
 }
 
 .modal-footer {
-    padding: 15px;
-    background-color: #f5f5f5;
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
-    text-align: right;
+    padding: 0 24px 24px 24px;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .modal-footer button {
@@ -1169,20 +1336,23 @@ header h1 {
     background-color: #f5f5f5;
     border-radius: 5px;
     min-height: 100px;
-    max-height: 200px;
-    overflow-y: auto;
+    max-height: none;
+    overflow-y: visible;
 }
 
 .payment-container .property-card {
-    width: 45px;
-    height: 68px;
+    width: 70px;
+    height: 105px;
     transform: scale(0.95);
     margin: 0;
     flex-shrink: 0;
+    position: relative;
+    z-index: 1;
 }
 
 .payment-container .property-card:hover {
     transform: scale(1.2);
+    z-index: 100;
 }
 
 .payment-container .payment-selectable {
@@ -1193,6 +1363,7 @@ header h1 {
 
 .payment-container .payment-selectable:hover {
     transform: translateY(-5px) scale(1.05);
+    z-index: 100;
 }
 
 .payment-container .payment-selected {
@@ -1963,34 +2134,76 @@ header h1 {
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 8px;
-    padding: 8px;
+    gap: 5px;
+    padding: 5px;
     background-color: rgba(0, 0, 0, 0.03);
     border-radius: 4px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    height: 170px; /* Fixed height */
-    min-height: 170px;
+    overflow: visible !important; /* Allow cards to expand beyond container */
+    height: 130px;
+    min-height: 130px;
     align-items: flex-start;
     align-content: flex-start;
+    position: relative; /* For proper z-index handling */
 }
 
-/* Property group styles - updated for two-row layout */
+/* Property group styles */
 .property-group {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin: 5px;
-    padding: 20px 8px 8px 8px; /* Increased top padding for header */
-    border-radius: 6px;
-    min-height: auto;
-    max-height: 170px;
-    width: auto;
-    min-width: 70px;
-    max-width: 300px;
-    position: relative;
-    flex-shrink: 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+  margin: 3px;
+  padding: 15px 5px 5px 5px;
+  border-radius: 5px;
+  min-height: 68px;
+  height: auto;
+  width: auto;
+  position: relative;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  overflow: visible !important;
+}
+
+/* Add monopoly indicator styles */
+.property-group.monopoly {
+  position: relative;
+}
+
+.property-group.monopoly::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border-radius: 7px;
+  background: linear-gradient(
+    45deg,
+    #ffd700,
+    #ffeb3b,
+    #ffd700,
+    #fff8e1,
+    #ffd700
+  );
+  z-index: -1;
+  animation: shine 2s linear infinite;
+}
+
+@keyframes shine {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 200% 0%;
+  }
+}
+
+/* Adjust z-index for property cards to appear above the monopoly indicator */
+.property-card.played {
+  z-index: 1;
+}
+
+.property-card.played:hover {
+  z-index: 100;
 }
 
 /* Color-specific property group backgrounds */
@@ -2010,8 +2223,8 @@ header h1 {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-    gap: 3px;
-    min-height: 65px;
+    gap: 2px;
+    min-height: 68px; /* Match card height */
     overflow-x: visible;
     padding: 2px;
 }
@@ -2028,42 +2241,79 @@ header h1 {
 .property-group-header {
     position: absolute;
     top: 2px;
-    left: 8px;
-    font-size: 10px;
+    left: 5px;
+    font-size: 8px;
     font-weight: bold;
     color: #333;
     background-color: rgba(255, 255, 255, 0.7);
-    padding: 2px 5px;
-    border-radius: 3px;
+    padding: 1px 4px;
+    border-radius: 2px;
     z-index: 2;
 }
 
-/* Property card styles - scaled down with hover enlargement */
+/* Property card styles */
 .property-card.played {
-    width: 45px;
-    height: 68px;
-    transform: scale(0.95);
-    margin: 0;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, z-index 0.01s linear;
-    z-index: 1;
+  width: 45px;
+  height: 68px;
+  transform: scale(0.95);
+  margin: 0;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  z-index: 1;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  flex-shrink: 0;
+  position: relative;
 }
 
 .property-card.played:hover {
-    transform: scale(1.4);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
-    z-index: 50;
+  transform: scale(2.5);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+  z-index: 100; /* Ensure hovered card appears above others */
+}
+
+/* Wildcard property styles */
+.property-card.played.wildcard {
+  cursor: pointer;
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.property-card.played.wildcard:hover {
+  transform: scale(2.5);
+}
+
+/* Remove old flip indicator styles */
+.wildcard-flip-indicator,
+.wildcard-flip-indicator::after,
+.property-card.played.wildcard:hover .wildcard-flip-indicator,
+.property-card.played.wildcard.flipped .wildcard-flip-indicator {
+  display: none;
+}
+
+/* Make sure the flip indicator stays visible during flip animation */
+.property-card.played.wildcard.flipped .wildcard-flip-indicator {
+  transform: rotate(180deg);
+}
+
+/* Ensure proper stacking context */
+.property-card.played.wildcard {
+  transform-style: preserve-3d;
+  perspective: 1000px;
 }
 
 /* Adjust property card text for smaller size */
 .property-card.played .property-name {
-    font-size: 8px;
-    top: 3px;
+    font-size: 6px; /* Reduced from 8px */
+    top: 2px;
+    left: 2px;
+    right: 2px;
 }
 
 .property-card.played .property-value {
-    font-size: 10px;
-    bottom: 3px;
-    right: 3px;
+    font-size: 6px; /* Reduced from previous size */
+    bottom: 2px;
+    right: 2px;
 }
 
 .property-card.played:hover .property-name {
@@ -2089,30 +2339,32 @@ header h1 {
 
 /* Payment action button in sidebar */
 .payment-action-button {
-    display: none; /* Hidden by default */
-    width: 100%;
-    margin-top: 15px;
-    margin-bottom: 10px;
-    position: relative;
+    display: none; /* Hide completely */
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 200px;
+    text-align: center;
     z-index: 10;
-    flex-shrink: 0;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
 }
 
 .payment-action-button .big-button {
-    background-color: #f44336; /* Red color for payment */
-    color: white;
-    animation: pulse-animation 1.5s infinite;
+    background-color: #f44336;
+    width: 100%;
+    white-space: normal;
 }
 
 .payment-action-button .big-button:hover {
     background-color: #d32f2f;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-/* Conditional display for payment action button */
 .payment-action-button.visible {
-    display: block;
+    opacity: 0; /* Keep hidden even when visible class is added */
+    visibility: hidden;
 }
 
 /* Payment bar for inline payment UI - completely revised for minimal height */
@@ -2209,7 +2461,7 @@ header h1 {
 
 .payment-pay-button:hover:not(:disabled) {
     background-color: #d32f2f;
-    transform: scale(1.05);
+        transform: scale(1.05);
     box-shadow: 0 3px 6px rgba(0,0,0,0.3);
 }
 
@@ -2349,60 +2601,599 @@ header h1 {
     overflow: hidden;
 }
 
+/* Remove the wildcard label */
 .property-wildcard-label {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(-45deg);
-    background-color: rgba(255, 255, 255, 0.8);
-    color: #333;
-    font-size: 9px;
-    font-weight: bold;
-    padding: 2px 5px;
-    border-radius: 3px;
-    text-align: center;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    z-index: 2;
+    display: none;
 }
 
-.property-wildcard.property-card .property-name {
-    font-size: 10px;
-    font-weight: bold;
-    z-index: 3;
-    background-color: rgba(255, 255, 255, 0.8);
-    border-radius: 3px;
-    padding: 1px 3px;
-}
-
-/* Rent card styles */
-.action-card .action-rent-type {
-    font-size: 11px;
-    font-weight: bold;
-    text-align: center;
-    margin: 3px 0;
-    padding: 2px 4px;
-    background-color: rgba(255, 255, 255, 0.8);
-    border-radius: 3px;
-    color: #333;
-}
-
-/* Any color wildcard special styling */
+/* Rainbow styling for the full wildcard property (10-way property) */
 .property-wildcard[data-colors="any"] {
-    background: var(--any-color);
+    background: repeating-linear-gradient(
+        45deg,
+        var(--brown-color) 0%,
+        var(--brown-color) 10%,
+        var(--light-blue-color) 10%,
+        var(--light-blue-color) 20%,
+        var(--pink-color) 20%,
+        var(--pink-color) 30%,
+        var(--orange-color) 30%,
+        var(--orange-color) 40%,
+        var(--red-color) 40%,
+        var(--red-color) 50%,
+        var(--yellow-color) 50%,
+        var(--yellow-color) 60%,
+        var(--green-color) 60%,
+        var(--green-color) 70%,
+        var(--blue-color) 70%,
+        var(--blue-color) 80%,
+        var(--utility-color) 80%,
+        var(--utility-color) 90%,
+        var(--railroad-color) 90%,
+        var(--railroad-color) 100%
+    );
+    position: relative;
+    overflow: hidden;
+    animation: shift-stripes 3s linear infinite;
 }
 
-/* Enhanced styling for property cards when played */
-.property-card.played.property-wildcard .property-name {
-    font-size: 7px;
+@keyframes shift-stripes {
+    0% {
+        background-position: 0 0;
+    }
+    100% {
+        background-position: 50px 50px;
+    }
 }
 
-.property-card.played.property-wildcard .property-wildcard-label {
-    font-size: 7px;
-    padding: 1px 3px;
+/* Add a shimmer effect for the full wildcard */
+.property-wildcard[data-colors="any"]::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        45deg,
+        rgba(255, 255, 255, 0.2) 0%,
+        rgba(255, 255, 255, 0.4) 25%,
+        rgba(255, 255, 255, 0.2) 50%,
+        rgba(255, 255, 255, 0) 75%,
+        rgba(255, 255, 255, 0.2) 100%
+    );
+    animation: shimmer 2s linear infinite;
 }
 
-/* Special styling for wildcard cards in hand */
-.property-wildcard:hover .property-name,
-.property-wildcard:hover .property-wildcard-label {
+@keyframes shimmer {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Make the property name more visible on rainbow background */
+.property-wildcard[data-colors="any"] .property-name {
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-size: 10px;
+    z-index: 3;
+}
+
+.property-wildcard[data-colors="any"] .property-value {
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 2px 4px;
+    border-radius: 3px;
+    z-index: 3;
+}
+
+/* Add visual indicator for clickable wildcards */
+.wildcard-click-indicator {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 18px;
+    height: 18px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     z-index: 10;
-} 
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.wildcard-click-indicator::after {
+    content: '↻';
+    font-size: 14px;
+    color: #333;
+}
+
+/* Rainbow pulse animation for 10-way wildcard */
+@keyframes rainbow-pulse {
+    0% {
+        box-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
+    }
+    100% {
+        box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+    }
+}
+
+/* Color selection modal for the full wildcard */
+.color-selection-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1050;
+    align-items: center;
+    justify-content: center;
+}
+
+.color-selection-modal.visible {
+    display: flex;
+}
+
+.color-selection-content {
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.color-selection-header {
+    font-size: 18px;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+}
+
+.color-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.color-option {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.color-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.color-option.selected {
+    box-shadow: 0 0 0 2px #4CAF50, 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.color-indicator {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.color-name {
+    font-weight: bold;
+}
+
+.brown-indicator { background-color: var(--brown-color); }
+.light-blue-indicator { background-color: var(--light-blue-color); }
+.pink-indicator { background-color: var(--pink-color); }
+.orange-indicator { background-color: var(--orange-color); }
+.red-indicator { background-color: var(--red-color); }
+.yellow-indicator { background-color: var(--yellow-color); }
+.green-indicator { background-color: var(--green-color); }
+.blue-indicator { background-color: var(--blue-color); }
+.utility-indicator { background-color: var(--utility-color); }
+.railroad-indicator { background-color: var(--railroad-color); }
+
+.color-selection-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+}
+
+.color-selection-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.color-selection-btn.confirm {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.color-selection-btn.confirm:hover {
+    background-color: #388E3C;
+}
+
+.color-selection-btn.cancel {
+    background-color: #F44336;
+    color: white;
+}
+
+.color-selection-btn.cancel:hover {
+    background-color: #D32F2F;
+}
+
+/* Action Response Container */
+.action-response-container {
+    display: none;
+    padding: 15px;
+    margin-top: 20px;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    border-left: 5px solid #ff9800;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.action-response-container.visible {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+.action-response-container h3 {
+    font-size: 16px;
+    color: #ff5722;
+    margin-bottom: 10px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.action-info {
+    margin-bottom: 15px;
+    padding: 8px 12px;
+    background-color: #fff8e1;
+    border-radius: 5px;
+    font-size: 14px;
+    line-height: 1.4;
+    color: #333;
+}
+
+.response-waiting {
+    font-weight: bold;
+    text-align: center;
+    color: #ff5722;
+    margin-bottom: 10px;
+    font-size: 14px;
+    padding: 5px;
+    background-color: rgba(255, 87, 34, 0.1);
+    border-radius: 4px;
+}
+
+.response-question {
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 12px;
+    color: #333;
+    font-size: 15px;
+}
+
+/* Vertical tab for response buttons */
+.response-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.response-btn {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.just-say-no-btn {
+    background-color: #f44336;
+    color: white;
+}
+
+.just-say-no-btn:hover:not(:disabled) {
+    background-color: #d32f2f;
+    transform: translateY(-2px);
+}
+
+.just-say-no-btn:disabled {
+    background-color: #ffcdd2;
+    color: #9e9e9e;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.proceed-btn {
+    background-color: #4caf50;
+    color: white;
+}
+
+.proceed-btn:hover {
+    background-color: #388e3c;
+    transform: translateY(-2px);
+}
+
+.no-card-message {
+    text-align: center;
+    color: #f44336;
+    font-style: italic;
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+.waiting-message {
+    padding: 10px;
+    background-color: #e8f5e9;
+    border-radius: 5px;
+    text-align: center;
+    font-style: italic;
+    color: #333;
+    margin-bottom: 12px;
+}
+
+.response-info {
+    font-size: 13px;
+    color: #666;
+    text-align: center;
+    line-height: 1.4;
+}
+
+/* Styling for protected 10-way wildcard that can't be given as payment */
+.protected-wildcard {
+  position: relative;
+  opacity: 0.8;
+  cursor: not-allowed;
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+}
+
+.protected-wildcard:hover {
+  transform: scale(1.03);
+  box-shadow: 0 0 15px rgba(255, 0, 0, 0.7);
+}
+
+.property-protected-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.4);
+  color: #ff3333;
+  font-weight: bold;
+  text-transform: uppercase;
+  font-size: 14px;
+  text-shadow: 0 0 3px black;
+  border: 2px solid #ff3333;
+  box-sizing: border-box;
+  z-index: 5;
+}
+
+/* Card counter style */
+.card-counter {
+    font-size: 14px;
+    color: #666;
+    font-weight: normal;
+    margin-left: 8px;
+}
+
+/* Actions left counter container */
+.actions-left-container {
+    margin: 15px 0;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.actions-left-container h3 {
+    margin: 0 0 5px;
+    color: #fff;
+    font-size: 16px;
+}
+
+.actions-left-counter {
+    font-size: 28px;
+    font-weight: bold;
+    color: #4CAF50;
+    transition: color 0.3s ease;
+}
+
+.actions-left-counter.zero {
+    color: #f44336;
+    animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+    from { opacity: 0.7; }
+    to { opacity: 1; }
+}
+
+.payment-confirm-btn {
+    display: block;
+    width: 200px;
+    margin: 20px auto;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: bold;
+    background: linear-gradient(to right, #4CAF50, #2E7D32);
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.payment-confirm-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    background: linear-gradient(to right, #43A047, #2E7D32);
+}
+
+.payment-confirm-btn:disabled {
+    background: linear-gradient(to right, #9E9E9E, #757575);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    opacity: 0.7;
+}
+
+/* Remove old modal footer styles */
+.modal-footer {
+    display: none;
+}
+
+/* Update payment sections spacing */
+.payment-section {
+    margin-top: 20px;
+}
+
+/* Color Selection Modal */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.5em;
+}
+
+.close-modal {
+  cursor: pointer;
+  font-size: 1.5em;
+  padding: 5px;
+}
+
+.close-modal:hover {
+  color: #666;
+}
+
+.color-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.color-option {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.color-option:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.color-indicator {
+  width: 30px;
+  height: 30px;
+  border-radius: 4px;
+  margin-right: 10px;
+}
+
+.color-info {
+  flex-grow: 1;
+}
+
+.color-name {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.property-count {
+  font-size: 0.9em;
+  color: #666;
+}
+
+.empty-message {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+}
+
+/* Color indicators for each property type */
+.brown-indicator { background-color: #8B4513; }
+.light-blue-indicator { background-color: #87CEEB; }
+.pink-indicator { background-color: #FF69B4; }
+.orange-indicator { background-color: #FFA500; }
+.red-indicator { background-color: #FF0000; }
+.yellow-indicator { background-color: #FFD700; }
+.green-indicator { background-color: #008000; }
+.blue-indicator { background-color: #0000FF; }
+.railroad-indicator { background-color: #000000; }
+.utility-indicator { background-color: #808080; }
+
+/* Property card with full wildcard */
+.property-card.played.wildcard {
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition: transform 0.3s ease;
+}
+
+.property-card.played.wildcard:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}

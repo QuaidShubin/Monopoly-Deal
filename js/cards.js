@@ -129,29 +129,29 @@ window.MonopolyDeal.initializeDeck = function() {
 
     // Add property wildcards - 11 total
     const propertyWildcards = [
-      // Purple & Orange (2 copies) – Bank Value: $2M
-      { colors: ['pink', 'orange'], name: 'Pink & Orange Wildcard', value: 2, count: 2 },
+      // Orange & Pink (2 copies) – Bank Value: $2M
+      { colors: ['orange', 'pink'], name: 'Orange & Pink Wildcard', value: 2, count: 2, imageCode: 'wildop', topColor: 'orange' },
       
       // Light Blue & Brown (1 copy) – Bank Value: $1M
-      { colors: ['light-blue', 'brown'], name: 'Light Blue & Brown Wildcard', value: 1, count: 1 },
+      { colors: ['light-blue', 'brown'], name: 'Light Blue & Brown Wildcard', value: 1, count: 1, imageCode: 'wildlbbr', topColor: 'light-blue' },
       
       // Light Blue & Railroad (1 copy) – Bank Value: $2M
-      { colors: ['light-blue', 'railroad'], name: 'Light Blue & Railroad Wildcard', value: 2, count: 1 },
+      { colors: ['light-blue', 'railroad'], name: 'Light Blue & Railroad Wildcard', value: 2, count: 1, imageCode: 'wildlbt', topColor: 'light-blue' },
       
-      // Dark Blue & Green (1 copy) – Bank Value: $4M
-      { colors: ['blue', 'green'], name: 'Blue & Green Wildcard', value: 4, count: 1 },
+      // Blue & Green (1 copy) – Bank Value: $4M
+      { colors: ['blue', 'green'], name: 'Blue & Green Wildcard', value: 4, count: 1, imageCode: 'wildbg', topColor: 'blue' },
       
       // Railroad & Green (1 copy) – Bank Value: $4M
-      { colors: ['railroad', 'green'], name: 'Railroad & Green Wildcard', value: 4, count: 1 },
+      { colors: ['railroad', 'green'], name: 'Railroad & Green Wildcard', value: 4, count: 1, imageCode: 'wildgt', topColor: 'green' },
       
       // Red & Yellow (2 copies) – Bank Value: $3M
-      { colors: ['red', 'yellow'], name: 'Red & Yellow Wildcard', value: 3, count: 2 },
+      { colors: ['red', 'yellow'], name: 'Red & Yellow Wildcard', value: 3, count: 2, imageCode: 'wildry', topColor: 'red' },
       
       // Utility & Railroad (1 copy) – Bank Value: $4M
-      { colors: ['utility', 'railroad'], name: 'Utility & Railroad Wildcard', value: 4, count: 1 },
+      { colors: ['utility', 'railroad'], name: 'Utility & Railroad Wildcard', value: 4, count: 1, imageCode: 'wildut', topColor: 'utility' },
       
       // Multicolor Wildcard (2 copies) – Bank Value: $0M
-      { colors: ['any'], name: 'Property Wildcard (Any Color)', value: 0, count: 2 }
+      { colors: ['any'], name: 'Property Wildcard (Any Color)', value: 0, count: 2, imageCode: 'propertywildcard' }
     ];
 
     // Add standard properties to deck
@@ -170,11 +170,13 @@ window.MonopolyDeal.initializeDeck = function() {
         deck.push({
           type: 'property',
           wildcard: true,
-          color: wildcard.colors[0],
-          secondaryColor: wildcard.colors.length > 1 ? wildcard.colors[1] : null,
+          color: wildcard.topColor || wildcard.colors[0],
+          secondaryColor: wildcard.colors.length > 1 ? (wildcard.topColor ? wildcard.colors.find(c => c !== wildcard.topColor) : wildcard.colors[1]) : null,
           colors: wildcard.colors,
           name: wildcard.name,
           value: wildcard.value,
+          imageCode: wildcard.imageCode,
+          isFlipped: false,
           id: `property_wildcard_${wildcardIndex}`
         });
         wildcardIndex++;
@@ -295,18 +297,6 @@ window.MonopolyDeal.canPlayCard = function(card, gameState, playerIndex) {
     return window.MonopolyDeal.CardValidationResult.MAX_CARDS_PLAYED;
   }
   
-  // For property rent cards, check if the player has properties of the required colors
-  if (card.type === 'action' && card.action === window.MonopolyDeal.ActionTypes.PROPERTY_RENT) {
-    const playerProperties = gameState.players[playerIndex].properties;
-    const hasRequiredProperties = card.colors.some(color => {
-      return playerProperties[color] && playerProperties[color].length > 0;
-    });
-    
-    if (!hasRequiredProperties) {
-      return window.MonopolyDeal.CardValidationResult.NO_MATCHING_PROPERTIES;
-    }
-  }
-
   return window.MonopolyDeal.CardValidationResult.VALID;
 };
 

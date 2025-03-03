@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monopoly Deal Card Game</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="css/styles.css">
     <style>
         /* Additional styles for the new buttons */
         .game-button {
@@ -73,6 +73,12 @@
                     <div class="card action-pile-placeholder">Last Action</div>
                 </div>
                 
+                <!-- Actions Left Counter -->
+                <div class="actions-left-container">
+                    <h3 id="current-player-indicator">Player 1</h3>
+                    <div id="actions-left-counter" class="actions-left-counter">3</div>
+                </div>
+                
                 <!-- Game history container moved to left sidebar -->
                 <div class="game-history-container">
                     <h3>Game History</h3>
@@ -94,7 +100,7 @@
             <div class="game-board">
                 <!-- Player 1 Area -->
                 <div class="opponent-area">
-                    <h2>Player 1</h2>
+                    <h2>Player 1 <span class="card-counter" id="opponent-card-counter">(0 cards)</span></h2>
                     <div class="player-section">
                         <div class="player-assets">
                             <div class="asset-section money-section">
@@ -115,7 +121,7 @@
 
                 <!-- Player 2 Area -->
                 <div class="player-area">
-                    <h2>Player 2</h2>
+                    <h2>Player 2 <span class="card-counter" id="player-card-counter">(0 cards)</span></h2>
                     <div class="player-section">
                         <div class="player-assets">
                             <div class="asset-section money-section">
@@ -168,18 +174,12 @@
         <div id="action-card-modal" class="modal">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2 id="modal-card-name">Action Card</h2>
+                    <h2 id="modal-card-name">Card Name</h2>
                     <span class="close-modal">&times;</span>
                 </div>
                 <div class="modal-body">
-                    <div class="card-preview" id="modal-card-preview"></div>
-                    <div class="action-options">
-                        <h3>Choose an option:</h3>
-                        <div id="action-options-container"></div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button id="modal-cancel-btn" class="secondary-btn">Cancel</button>
+                    <div id="modal-card-preview" class="card-preview"></div>
+                    <div id="action-options-container" class="action-options"></div>
                 </div>
             </div>
         </div>
@@ -192,46 +192,87 @@
                     <span class="close">&times;</span>
                 </div>
                 <div class="modal-body">
-                    <div class="payment-details">
-                        <div class="payment-info-row">
-                            <span class="payment-label">Reason:</span>
-                            <span id="payment-reason" class="payment-value">Rent</span>
-                        </div>
-                        <div class="payment-info-row">
-                            <span class="payment-label">Required Amount:</span>
-                            <span class="payment-value">$<span id="payment-amount">0</span>M</span>
-                        </div>
-                        <div class="payment-info-row">
-                            <span class="payment-label">Selected Amount:</span>
-                            <span class="payment-value">$<span id="payment-selected-amount">0</span>M of $<span id="payment-required-amount">0</span>M</span>
-                        </div>
-                        <div class="payment-progress">
+                    <div class="payment-progress">
+                        <div class="payment-current">$<span id="payment-current-amount">0</span>M</div>
+                        <div class="payment-bar-container">
                             <div id="payment-progress-bar"></div>
                         </div>
+                        <div class="payment-target">$<span id="payment-required-amount">0</span>M</div>
                     </div>
                     
+                    <button id="payment-confirm-btn" class="modal-btn payment-confirm-btn">Pay</button>
+                    
                     <div class="payment-section">
-                        <h3>Select Money Cards</h3>
                         <div id="payment-money-container" class="payment-assets-container"></div>
                     </div>
                     
                     <div class="payment-section">
-                        <h3>Select Property Cards</h3>
                         <div id="payment-properties-container" class="payment-assets-container"></div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button id="payment-cancel-btn" class="modal-btn">Cancel</button>
-                    <button id="payment-confirm-btn" class="modal-btn" disabled>Send Payment</button>
+            </div>
+        </div>
+
+        <!-- Wildcard Color Selection Modal -->
+        <div id="color-selection-modal" class="color-selection-modal">
+            <div class="color-selection-content">
+                <div class="color-selection-header">
+                    Select Property Color
+                </div>
+                <div class="color-options">
+                    <div class="color-option" data-color="brown">
+                        <div class="color-indicator brown-indicator"></div>
+                        <div class="color-name">Brown</div>
+                    </div>
+                    <div class="color-option" data-color="light-blue">
+                        <div class="color-indicator light-blue-indicator"></div>
+                        <div class="color-name">Light Blue</div>
+                    </div>
+                    <div class="color-option" data-color="pink">
+                        <div class="color-indicator pink-indicator"></div>
+                        <div class="color-name">Pink</div>
+                    </div>
+                    <div class="color-option" data-color="orange">
+                        <div class="color-indicator orange-indicator"></div>
+                        <div class="color-name">Orange</div>
+                    </div>
+                    <div class="color-option" data-color="red">
+                        <div class="color-indicator red-indicator"></div>
+                        <div class="color-name">Red</div>
+                    </div>
+                    <div class="color-option" data-color="yellow">
+                        <div class="color-indicator yellow-indicator"></div>
+                        <div class="color-name">Yellow</div>
+                    </div>
+                    <div class="color-option" data-color="green">
+                        <div class="color-indicator green-indicator"></div>
+                        <div class="color-name">Green</div>
+                    </div>
+                    <div class="color-option" data-color="blue">
+                        <div class="color-indicator blue-indicator"></div>
+                        <div class="color-name">Blue</div>
+                    </div>
+                    <div class="color-option" data-color="utility">
+                        <div class="color-indicator utility-indicator"></div>
+                        <div class="color-name">Utility</div>
+                    </div>
+                    <div class="color-option" data-color="railroad">
+                        <div class="color-indicator railroad-indicator"></div>
+                        <div class="color-name">Railroad</div>
+                    </div>
+                </div>
+                <div class="color-selection-actions">
+                    <button id="cancel-color-selection" class="color-selection-btn cancel">Cancel</button>
+                    <button id="confirm-color-selection" class="color-selection-btn confirm">Confirm</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
-    <script src="cards.js"></script>
-    <script src="gameState.js"></script>
-    <script src="ui.js"></script>
-    <script src="scripts.js"></script>
+    <script src="js/cards.js"></script>
+    <script src="js/gameState.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/scripts.js"></script>
 </body>
 </html>
