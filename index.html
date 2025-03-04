@@ -193,7 +193,7 @@
                 </div>
                 <div class="modal-body">
                     <div class="payment-progress">
-                        <div class="payment-current">$<span id="payment-current-amount">0</span>M</div>
+                        <div id="payment-current" class="payment-current" style="color: #f44336;">$0M</div>
                         <div class="payment-bar-container">
                             <div id="payment-progress-bar"></div>
                         </div>
@@ -274,5 +274,44 @@
     <script src="js/gameState.js"></script>
     <script src="js/ui.js"></script>
     <script src="js/scripts.js"></script>
+    
+    <!-- Payment UI fix script -->
+    <script>
+        // Helper function to update payment display
+        function updatePaymentDisplay() {
+            // Find the payment-current element
+            const currentElement = document.getElementById('payment-current');
+            if (currentElement) {
+                // Get the current selected total
+                let selectedTotal = 0;
+                if (window.MonopolyDeal && window.MonopolyDeal.calculateSelectedPaymentTotal) {
+                    selectedTotal = window.MonopolyDeal.calculateSelectedPaymentTotal();
+                }
+                
+                // Update the text content
+                currentElement.textContent = `$${selectedTotal}M`;
+                
+                // Update the color
+                if (window.MonopolyDeal && window.MonopolyDeal.gameState && window.MonopolyDeal.gameState.paymentRequest) {
+                    const adjustedAmount = window.MonopolyDeal.gameState.paymentRequest.adjustedAmount || 
+                                         window.MonopolyDeal.gameState.paymentRequest.amount || 0;
+                    if (selectedTotal >= adjustedAmount) {
+                        currentElement.style.color = '#4CAF50'; // Green
+                    } else {
+                        currentElement.style.color = '#f44336'; // Red
+                    }
+                }
+            }
+        }
+        
+        // Run initially and set interval to keep it updated
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial update
+            updatePaymentDisplay();
+            
+            // Set interval to update every 500ms
+            setInterval(updatePaymentDisplay, 500);
+        });
+    </script>
 </body>
 </html>
